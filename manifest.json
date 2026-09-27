@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "description": "Save all open tabs as a session in one click, restore anytime. Auto-backup so a crash never loses your window again.",
   "author": "you",
-  "permissions": ["storage", "tabs", "alarms"],
+  "permissions": ["storage", "tabs", "alarms", "sidePanel"],
   "action": {
     "default_title": "Open TabVault sidebar",
     "default_icon": {

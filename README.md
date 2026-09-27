@@ -62,7 +62,7 @@ AUTO_INTERVAL_MIN: 15     // ← 自动备份间隔（分钟），改成 10 更�
 
 ```
 tab-vault/
-├── manifest.json      # MV3；权限只有 storage / tabs / alarms（无 host_permissions，审核最快）
+├── manifest.json      # MV3；权限只有 storage / tabs / alarms / sidePanel（无 host_permissions，审核最快）
 ├── background.js      # service worker：自动备份 alarm、快捷键、徽标计数
 ├── config.js          # ★ 唯一调参点：SECRET / 收款链接 / FREE / PRO 门控
 ├── license.js         # HMAC-SHA256 验签（纯本地）
@@ -70,8 +70,14 @@ tab-vault/
 ├── worker/            # Cloudflare Worker：/buy 跳转 Stripe、/success 验支付后签发 key
 ├── tools/keygen.mjs   # 手动 / 批量补发 key（客服用）
 ├── tools/selftest.mjs # 三端签名一致性自检
+├── docs/              # 落地页 + 隐私政策 + 支持页 + CWS 逐屏上架指南（GitHub Pages 从 /docs 发布）
 └── setup.mjs          # 交互式部署向导
 ```
+
+商店素材（已生成，不在 git 里）：
+- 代码包 `../tabvault-extension-store.zip`（含真实 SECRET，只上传商店，绝不进公开仓库）
+- 截图 `../tabvault-store-images/`：4 张 1280x800 + tile-small 440x280 + tile-top 1400x560
+- 重新打包：`powershell -File dev\repack-store.ps1`
 
 隐私说明：所有数据只写在本机 `chrome.storage.local`，扩展不发起任何网络请求
 （除用户主动点「购买」打开收款页）。`tabs` 权限用于读取标签标题与 URL 以保存会话。

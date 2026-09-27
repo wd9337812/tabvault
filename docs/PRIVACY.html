@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TabVault — Privacy Policy 隐私政策</title>
+<style>
+body{font:15px/1.8 system-ui,"Segoe UI","PingFang SC","Microsoft Yahei",sans-serif;
+max-width:720px;margin:40px auto;padding:0 20px;color:#1f2430}
+h1{font-size:26px;margin-bottom:4px}h2{font-size:18px;margin-top:32px;border-left:4px solid #6d5efc;padding-left:10px}
+.zh{color:#4b5566}
+.badge{display:inline-block;background:#eef0ff;color:#4636e3;border-radius:999px;padding:2px 12px;font-size:12px;margin:6px 6px 0 0}
+footer{margin-top:48px;padding-top:16px;border-top:1px solid #e5e7eb;color:#8b93a7;font-size:13px}
+</style>
+</head>
+<body>
+<h1>TabVault — Privacy Policy</h1>
+<p style="color:#8b93a7">Effective date 生效日期: 2026-09-27</p>
+<div>
+  <span class="badge">No accounts 无需账号</span>
+  <span class="badge">Local storage only 仅本地存储</span>
+  <span class="badge">No analytics 无统计追踪</span>
+  <span class="badge">No data collection 不收集数据</span>
+</div>
+
+<h2>English</h2>
+<div>
+<p><strong>TabVault</strong> is a tab-session saver for Chrome: it stores the list of tabs
+open in a window so you can restore that window later. To be explicit:
+<strong>TabVault does not collect, transmit, sell, or share any personal data,
+and it has no server that stores user content.</strong></p>
+
+<p><strong>What data exists, and where does it live?</strong><br>
+A "session" is a title + URL list per tab, plus a session name and timestamp. Everything
+is written <em>only</em> to your own browser through the <code>chrome.storage</code> API.
+It never leaves your device, it is never synced to us, and it is deleted permanently when
+you remove the extension or clear your browser data. Optionally you can export that local
+data to a JSON file yourself; that file is created and kept by you alone.</p>
+
+<p><strong>Why does the extension request the permissions it does?</strong><br>
+<code>tabs</code> — read the title and URL of the tabs in the window you choose to save, so the
+session can be rebuilt later. It is read at the moment you press "Save" (or when auto-backup
+runs, which you must enable explicitly). TabVault does not read browsing history, does not
+track which pages you visit, and does not monitor tab changes continuously.<br>
+<code>storage</code> — the local persistence layer described above.<br>
+<code>alarms</code> — a timer that lets the optional Pro auto-backup take a snapshot of the
+current window every N minutes; snapshots are written to local storage only.<br>
+<code>sidePanel</code> — shows TabVault's own user interface in Chrome's side panel.</p>
+
+<p><strong>Licensing &amp; payments.</strong><br>
+The optional Pro upgrade is a one-time purchase processed by Stripe (stripe.com) on
+Stripe-hosted checkout pages. Card details are handled entirely by Stripe and never reach us.
+When you buy, our small worker verifies with Stripe that the payment succeeded and returns a
+license key; the extension then checks that key <em>locally</em> in your browser. We do not
+receive usage telemetry from the extension.</p>
+
+<p><strong>Contact:</strong> open an issue at
+https://github.com/wd9337812/tabvault or email the developer via the GitHub profile.</p>
+</div>
+
+<h2>中文</h2>
+<div class="zh">
+<p><strong>TabVault</strong> 是一款 Chrome 标签会话管理扩展：把某个窗口中打开的标签列表
+保存下来，之后一键恢复。我们明确声明：<strong>TabVault 不收集、不传输、不出售、不共享
+任何个人数据，也没有存放用户内容的服务器。</strong></p>
+
+<p><strong>数据存在哪里？</strong><br>
+一个「会话」就是每个标签的标题与网址，加上会话名称和时间戳。所有内容<em>仅</em>通过
+<code>chrome.storage</code> 写入你自己的浏览器本地，永不离开设备，也不会同步给我们；
+卸载扩展或清除浏览器数据即永久删除。你也可以自行把本地数据导出为 JSON 文件，该文件
+只由你保存。</p>
+
+<p><strong>为什么要这些权限？</strong><br>
+<code>tabs</code>：读取你主动保存的那个窗口中标签的标题与网址，以便之后恢复。只在你点击
+「保存」时（或在你主动开启的自动备份触发时）读取。不读取浏览历史，不追踪你访问了什么，
+不持续监听标签变化。<br>
+<code>storage</code>：上述本地存储。<br>
+<code>alarms</code>：定时器，让可选的 Pro 自动备份每隔 N 分钟为当前窗口拍一份快照，
+快照只写入本地存储。<br>
+<code>sidePanel</code>：在 Chrome 侧边栏显示扩展自己的界面。</p>
+
+<p><strong>许可与支付。</strong><br>
+Pro 一次性买断由 Stripe 在其托管结账页处理，银行卡信息完全由 Stripe 管理，不经过我们。
+购买后，我们的轻量服务会向 Stripe 确认支付成功并返回一个 License Key，扩展随后在你的
+浏览器<em>本地</em>校验该密钥。我们不接收任何使用遥测。</p>
+
+<p><strong>联系方式：</strong>https://github.com/wd9337812/tabvault 提交 Issue，
+或通过 GitHub 主页邮箱联系开发者。</p>
+</div>
+
+<footer>
+This page is part of the TabVault repository
+(<a href="https://github.com/wd9337812/tabvault">github.com/wd9337812/tabvault</a>).<br>
+本页面属于 TabVault 仓库，可直接用作 Chrome 应用商店的隐私政策链接。
+</footer>
+</body>
+</html>
