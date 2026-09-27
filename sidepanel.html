@@ -20,22 +20,22 @@
     </header>
 
     <section class="capture">
-      <button id="btnSave" class="capture-btn" title="把当前窗口所有标签保存为会话 (Alt+Shift+S)">
-        <span class="plus">＋</span> 保存当前窗口
+      <button id="btnSave" class="capture-btn" data-i18n-title="saveTitle">
+        <span class="plus">＋</span> <span data-i18n="save">Save current window</span>
       </button>
       <div class="search-row">
-        <input id="searchBox" class="quick-add" type="text" placeholder="搜索会话里的标签… (Pro)" />
-        <button id="btnSaveClose" class="mini-btn" title="保存后关闭当前窗口标签，释放内存">存后关闭</button>
+        <input id="searchBox" class="quick-add" type="text" data-i18n-ph="searchLocked" />
+        <button id="btnSaveClose" class="mini-btn" data-i18n-title="saveCloseTitle" data-i18n="saveClose">Save &amp; close</button>
       </div>
     </section>
 
     <main id="sessionList" class="task-list"></main>
 
     <footer class="foot">
-      <span id="counter">0 个会话</span>
+      <span id="counter">0 / 5 sessions</span>
       <div class="foot-actions">
-        <button id="btnExport" class="link-btn">导出</button>
-        <button id="btnImport" class="link-btn">导入</button>
+        <button id="btnExport" class="link-btn" data-i18n="export">Export</button>
+        <button id="btnImport" class="link-btn" data-i18n="import">Import</button>
       </div>
     </footer>
   </div>
@@ -43,46 +43,57 @@
   <!-- 升级 / 设置抽屉 -->
   <div id="drawer" class="drawer hidden">
     <div class="drawer-head">
-      <h3>TabVault Pro</h3>
+      <h3 data-i18n="proTitle">TabVault Pro</h3>
       <button id="btnCloseDrawer" class="icon-btn">✕</button>
     </div>
     <div class="drawer-body">
       <ul class="pro-points">
-        <li>无限手动会话（免费 5 个）</li>
-        <li>每 15 分钟自动备份，崩溃后一键找回</li>
-        <li>跨会话搜索所有标签</li>
-        <li>导出 / 导入 JSON 备份</li>
+        <li data-i18n="p1" data-i18n-vars='{"max":5}'>Unlimited sessions (free: 5)</li>
+        <li data-i18n="p2" data-i18n-vars='{"n":15}'>Auto-backup every 15 min</li>
+        <li data-i18n="p3">Search across every saved tab</li>
+        <li data-i18n="p4">Export / import a JSON backup</li>
       </ul>
 
       <div class="price-card">
         <div class="price">
           <span class="amount">$6</span>
-          <span class="per">一次性买断 · 全平台</span>
+          <span class="per" data-i18n="per">one-time · all your devices</span>
         </div>
-        <a id="btnBuy" class="buy-btn" href="#" target="_blank" rel="noopener">购买 Pro</a>
-        <p class="buy-note">付款后你会收到 License Key，粘贴到下方即可激活。</p>
+        <a id="btnBuy" class="buy-btn" href="#" target="_blank" rel="noopener" data-i18n="buy">Buy Pro</a>
+        <p class="buy-note" data-i18n="buyNote">You get a License Key after payment.</p>
       </div>
 
       <div class="activate">
-        <label>已有 License Key？</label>
-        <textarea id="licenseInput" placeholder="PRO·xxxx.yyyy 粘贴到这里"></textarea>
+        <label data-i18n="haveKey">Already have a License Key?</label>
+        <textarea id="licenseInput" data-i18n-ph="keyPh"></textarea>
         <div class="activate-row">
-          <button id="btnActivate" class="buy-btn ghost">激活</button>
-          <button id="btnDeactivate" class="link-btn">解除本设备</button>
+          <button id="btnActivate" class="buy-btn ghost" data-i18n="activate">Activate</button>
+          <button id="btnDeactivate" class="link-btn" data-i18n="deactivate">Release device</button>
         </div>
         <p id="licStatus" class="lic-status"></p>
       </div>
 
       <div class="lists-admin">
-        <h4>自动备份</h4>
+        <h4 data-i18n="autoHead">Auto-backup</h4>
         <label class="switch-row">
           <input type="checkbox" id="chkAuto" />
-          <span>开启后每 <b id="lblInterval">15</b> 分钟备份当前窗口（Pro）</span>
+          <span><span data-i18n="autoRowA">Vault this window every</span>
+            <b id="lblInterval">15</b> <span data-i18n="autoRowB">min (Pro)</span></span>
         </label>
         <label class="switch-row">
           <input type="checkbox" id="chkDelAfterRestore" />
-          <span>恢复会话后自动删除该会话</span>
+          <span data-i18n="delAfterRow">Delete a session once it has been restored</span>
         </label>
+      </div>
+
+      <div class="lists-admin">
+        <h4 data-i18n="langHead">Language 语言</h4>
+        <select id="selLang" class="lang-select">
+          <option value="auto" data-i18n="langAuto">Auto (browser)</option>
+          <option value="en">English</option>
+          <option value="zh">中文</option>
+        </select>
+        <p class="buy-note" data-i18n="note">All sessions stay in this browser.</p>
       </div>
     </div>
   </div>
@@ -122,6 +133,7 @@
   }
   </script>
   <script src="config.js"></script>
+  <script src="i18n.js"></script>
   <script src="license.js"></script>
   <script src="sidepanel.js"></script>
 </body>

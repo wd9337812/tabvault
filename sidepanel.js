@@ -1,5 +1,6 @@
 // ============================================================
 //  sidepanel.js  —  TabVault 主逻辑（会话保存/恢复/搜索/门控）
+//  文案全部走 I18N.t()（见 i18n.js），按浏览器语言自动 en / zh。
 // ============================================================
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
@@ -10,24 +11,27 @@ const STORE_LICENSE = "tv_license";
 
 const state = {
   sessions: [],
-  settings: { autoOn: false, intervalMin: CONFIG.AUTO_INTERVAL_MIN, delAfterRestore: false, plan: "free" },
+  settings: { autoOn: false, intervalMin: CONFIG.AUTO_INTERVAL_MIN, delAfterRestore: false, plan: "free", langPref: "auto" },
   plan: "free",
   query: "",
 };
+
+const t = (k, v) => I18N.t(k, v);
 
 // ---------- 基础工具 ----------
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 function esc(s) { return (s || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function timeAgo(ts) {
   const d = Date.now() - ts;
-  if (d < 6e4) return "刚刚";
-  if (d < 36e5) return Math.floor(d / 6e4) + " 分钟前";
-  if (d < 864e5) return Math.floor(d / 36e5) + " 小时前";
+  if (d < 6e4) return t("justNow");
+  if (d < 36e5) return t("minAgo", { n: Math.floor(d / 6e4) });
+  if (d < 864e5) return t("hrAgo", { n: Math.floor(d / 36e5) });
   return new Date(ts).toLocaleDateString() + " " + new Date(ts).toLocaleTimeString().slice(0, 5);
 }
-function toast(msg) { const t = $("#toast"); t.textContent = msg; t.classList.remove("hidden"); clearTimeout(toast._h); toast._h = setTimeout(() => t.classList.add("hidden"), 2600); }
+function toast(msg) { const el = $("#toast"); el.textContent = msg; el.classList.remove("hidden"); clearTimeout(toast._h); toast._h = setTimeout(() => el.classList.add("hidden"), 2600); }
 function isPro() { return state.plan === "pro"; }
 function caps() { return isPro() ? CONFIG.PRO : CONFIG.FREE; }
+function intervalMin() { return state.settings.intervalMin || CONFIG.AUTO_INTERVAL_MIN; }
 
 async function load() {
   const d = await chrome.storage.local.get([STORE_SESSIONS, STORE_SETTINGS, STORE_LICENSE]);
@@ -39,6 +43,12 @@ async function load() {
     if (!v.ok) await chrome.storage.local.remove(STORE_LICENSE);
   }
   state.settings.plan = state.plan;
+  // 语言：?lang= 只用于截图/调试，不写回存储
+  const forced = (location.search.match(/lang=(\w+)/) || [])[1];
+  I18N.setPref(forced || state.settings.langPref || "auto");
+  state.settings.langPref = forced || state.settings.langPref || "auto";
+  state.settings.langResolved = I18N.lang();          // service worker 命名自动备份用
+  document.documentElement.lang = state.settings.langResolved;
   await chrome.storage.local.set({ [STORE_SETTINGS]: state.settings });
 }
 async function saveSessions() {
@@ -48,7 +58,7 @@ async function saveSessions() {
 
 // ---------- 门控 ----------
 function upgradeNeeded(why) {
-  toast(why || "此功能属于 Pro");
+  toast(why || t("tProOnly"));
   openDrawer();
 }
 function manualCount() { return state.sessions.filter((s) => !s.auto).length; }
@@ -56,19 +66,19 @@ function manualCount() { return state.sessions.filter((s) => !s.auto).length; }
 // ---------- 会话操作 ----------
 async function currentWindowTabs() {
   const tabs = await chrome.tabs.query({ currentWindow: true });
-  return tabs.filter((t) => t.url && /^https?:/i.test(t.url));
+  return tabs.filter((tab) => tab.url && /^https?:/i.test(tab.url));
 }
 function sessionName(tabs) {
-  const hosts = [...new Set(tabs.map((t) => { try { return new URL(t.url).hostname.replace(/^www\./, ""); } catch { return ""; } }))].filter(Boolean);
+  const hosts = [...new Set(tabs.map((x) => { try { return new URL(x.url).hostname.replace(/^www\./, ""); } catch { return ""; } }))].filter(Boolean);
   const head = hosts.slice(0, 3).join(", ");
-  return `${head || "窗口"}${hosts.length > 3 ? ` +${hosts.length - 3}` : ""} · ${tabs.length} 个标签`;
+  return `${head || t("windowWord")}${hosts.length > 3 ? ` +${hosts.length - 3}` : ""} ${t("tabsSuffix", { n: tabs.length })}`;
 }
 
 async function saveWindow({ andClose = false } = {}) {
   const tabs = await currentWindowTabs();
-  if (!tabs.length) return toast("当前窗口没有可保存的网页标签");
+  if (!tabs.length) return toast(t("tNoTabs"));
   if (!isPro() && manualCount() >= caps().maxManualSessions) {
-    return upgradeNeeded(`免费版最多 ${caps().maxManualSessions} 个手动会话，删除旧的或升级 Pro`);
+    return upgradeNeeded(t("tFreeLimit", { max: caps().maxManualSessions }));
   }
   const seen = new Set();
   const session = {
@@ -76,16 +86,16 @@ async function saveWindow({ andClose = false } = {}) {
     name: sessionName(tabs),
     createdAt: Date.now(),
     auto: false,
-    tabs: tabs.filter((t) => !seen.has(t.url) && seen.add(t.url)).map((t) => ({ title: t.title || t.url, url: t.url })),
+    tabs: tabs.filter((x) => !seen.has(x.url) && seen.add(x.url)).map((x) => ({ title: x.title || x.url, url: x.url })),
   };
   state.sessions.unshift(session);
   await saveSessions();
   render();
-  toast(`已保存 ${session.tabs.length} 个标签`);
+  toast(t("tSaved", { n: session.tabs.length }));
   if (andClose) {
     const keep = new Set([tabs[0].id]);
-    await chrome.tabs.remove(tabs.filter((t) => !keep.has(t.id)).map((t) => t.id)).catch(() => {});
-    toast(`已保存并释放 ${tabs.length - 1} 个标签的内存`);
+    await chrome.tabs.remove(tabs.filter((x) => !keep.has(x.id)).map((x) => x.id)).catch(() => {});
+    toast(t("tSavedClosed", { n: tabs.length - 1 }));
     render();
   }
 }
@@ -93,19 +103,19 @@ async function saveWindow({ andClose = false } = {}) {
 async function restoreSession(id) {
   const s = state.sessions.find((x) => x.id === id);
   if (!s) return;
-  await chrome.windows.create({ url: s.tabs.map((t) => t.url) });
+  await chrome.windows.create({ url: s.tabs.map((x) => x.url) });
   if (state.settings.delAfterRestore && !s.auto) {
     state.sessions = state.sessions.filter((x) => x.id !== id);
     await saveSessions();
   }
   render();
-  toast(`已恢复 ${s.tabs.length} 个标签`);
+  toast(t("tRestored", { n: s.tabs.length }));
 }
 
 async function deleteSession(id) {
   const s = state.sessions.find((x) => x.id === id);
   if (!s) return;
-  if (!confirm(`删除「${s.name}」？`)) return;
+  if (!confirm(t("tDelConfirm", { name: s.name }))) return;
   state.sessions = state.sessions.filter((x) => x.id !== id);
   await saveSessions();
   render();
@@ -114,7 +124,7 @@ async function deleteSession(id) {
 async function renameSession(id) {
   const s = state.sessions.find((x) => x.id === id);
   if (!s || s.auto) return;
-  const name = prompt("会话名称", s.name);
+  const name = prompt(t("tRenamePrompt"), s.name);
   if (name && name.trim()) { s.name = name.trim().slice(0, 80); await saveSessions(); render(); }
 }
 
@@ -127,39 +137,39 @@ function hl(text) {
 }
 
 function render() {
+  I18N.applyI18n();
   $("#planBadge").textContent = isPro() ? "PRO" : "FREE";
   $("#planBadge").className = "plan " + (isPro() ? "plan-pro" : "plan-free");
-  $("#btnSaveClose").title = "保存当前窗口后关闭其余标签，释放内存";
 
   const q = state.query;
   const list = state.sessions
     .map((s) => {
       if (!q) return { s, tabs: s.tabs };
-      const hit = s.tabs.filter((t) => (t.title + " " + t.url).toLowerCase().includes(q.toLowerCase()));
+      const hit = s.tabs.filter((x) => (x.title + " " + x.url).toLowerCase().includes(q.toLowerCase()));
       return (s.name.toLowerCase().includes(q.toLowerCase()) || hit.length) ? { s, tabs: hit.length ? hit : s.tabs } : null;
     })
     .filter(Boolean);
 
   const el = $("#sessionList");
   if (!list.length) {
-    el.innerHTML = `<div class="empty">${q ? "没有匹配的会话或标签" : "还没有会话<br>点上方按钮或按 <b>Alt+Shift+S</b><br>把当前窗口整个存进来"}</div>`;
+    el.innerHTML = `<div class="empty">${q ? t("emptySearch") : t("empty")}</div>`;
   } else {
     el.innerHTML = list.map(({ s, tabs }) => `
       <div class="session ${s.auto ? "auto" : ""}" data-id="${s.id}">
         <div class="sess-head">
-          <span class="sess-name" title="点击重命名">${hl(s.name)}</span>
-          ${s.auto ? '<span class="badge-auto">自动</span>' : ""}
+          <span class="sess-name" title="${esc(t("renameTip"))}">${hl(s.name)}</span>
+          ${s.auto ? `<span class="badge-auto">${esc(t("auto"))}</span>` : ""}
           <span class="sess-count">${s.tabs.length}</span>
           <span class="sess-time">${timeAgo(s.createdAt)}</span>
         </div>
-        <ul class="sess-tabs">${tabs.slice(0, 12).map((t) => `
-          <li><span class="fav"></span><a href="${esc(t.url)}" target="_blank" rel="noopener" title="${esc(t.url)}">${hl(t.title)}</a></li>`).join("")}
-          ${tabs.length > 12 ? `<li><span class="fav" style="opacity:.3"></span><span style="color:var(--muted);font-size:12px">…还有 ${tabs.length - 12} 个</span></li>` : ""}
+        <ul class="sess-tabs">${tabs.slice(0, 12).map((x) => `
+          <li><span class="fav"></span><a href="${esc(x.url)}" target="_blank" rel="noopener" title="${esc(x.url)}">${hl(x.title)}</a></li>`).join("")}
+          ${tabs.length > 12 ? `<li><span class="fav" style="opacity:.3"></span><span style="color:var(--muted);font-size:12px">${esc(t("more", { n: tabs.length - 12 }))}</span></li>` : ""}
         </ul>
         <div class="sess-actions">
-          <button class="restore-btn" data-act="restore">恢复全部</button>
-          <button class="ghost-btn" data-act="toggle">${q ? "" : "展开/收起"}</button>
-          ${s.auto ? "" : '<button class="ghost-btn del" data-act="del">删除</button>'}
+          <button class="restore-btn" data-act="restore">${esc(t("restoreAll"))}</button>
+          <button class="ghost-btn" data-act="toggle">${q ? "" : esc(t("toggle"))}</button>
+          ${s.auto ? "" : `<button class="ghost-btn del" data-act="del">${esc(t("del"))}</button>`}
         </div>
       </div>`).join("");
     // 搜索态默认展开命中项
@@ -167,14 +177,18 @@ function render() {
   }
 
   const total = state.sessions.reduce((n, s) => n + s.tabs.length, 0);
-  $("#counter").textContent = `${manualCount()} / ${isPro() ? "∞" : caps().maxManualSessions} 会话 · ${total} 标签`;
+  $("#counter").textContent = t("counter", { n: manualCount(), max: isPro() ? "∞" : caps().maxManualSessions, tabs: total });
 
-  $("#searchBox").placeholder = isPro() ? "搜索所有会话里的标签…" : "跨会话搜索属于 Pro 🔒";
+  $("#searchBox").placeholder = isPro() ? t("searchPro") : t("searchLocked");
   $("#chkAuto").checked = !!state.settings.autoOn && isPro();
   $("#chkAuto").disabled = !isPro();
   $("#chkDelAfterRestore").checked = !!state.settings.delAfterRestore;
-  $("#lblInterval").textContent = state.settings.intervalMin || CONFIG.AUTO_INTERVAL_MIN;
+  $("#lblInterval").textContent = intervalMin();
   $("#btnBuy").href = CONFIG.STRIPE_PAYMENT_LINK;
+  $("#selLang").value = state.settings.langPref || "auto";
+  // 抽屉里的数量/间隔提示跟随实际配置
+  $$("[data-i18n='p1']").forEach((n) => (n.innerHTML = t("p1", { max: CONFIG.FREE.maxManualSessions })));
+  $$("[data-i18n='p2']").forEach((n) => (n.innerHTML = t("p2", { n: intervalMin() })));
 }
 
 $("#sessionList").addEventListener("click", (e) => {
@@ -193,7 +207,7 @@ $("#sessionList").addEventListener("click", (e) => {
 
 // ---------- 导入 / 导出 ----------
 function exportAll() {
-  if (!caps().export) return upgradeNeeded("导出备份属于 Pro");
+  if (!caps().export) return upgradeNeeded(t("tExportPro"));
   const blob = new Blob([JSON.stringify({ app: "tabvault", v: 1, sessions: state.sessions }, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
@@ -201,7 +215,7 @@ function exportAll() {
   a.click();
   URL.revokeObjectURL(a.href);
 }
-$("#btnImport").addEventListener("click", () => { if (!caps().export) return upgradeNeeded("导入备份属于 Pro"); $("#fileImport").click(); });
+$("#btnImport").addEventListener("click", () => { if (!caps().export) return upgradeNeeded(t("tImportPro")); $("#fileImport").click(); });
 $("#fileImport").addEventListener("change", async (e) => {
   const f = e.target.files[0];
   if (!f) return;
@@ -212,8 +226,8 @@ $("#fileImport").addEventListener("change", async (e) => {
     state.sessions = [...data.sessions.filter((s) => !have.has(s.id)), ...state.sessions].sort((a, b) => b.createdAt - a.createdAt);
     await saveSessions();
     render();
-    toast(`导入 ${data.sessions.length} 个会话`);
-  } catch { toast("文件格式不对"); }
+    toast(t("tImported", { n: data.sessions.length }));
+  } catch { toast(t("tBadFile")); }
   e.target.value = "";
 });
 
@@ -224,17 +238,17 @@ $("#btnCloseDrawer").addEventListener("click", () => $("#drawer").classList.add(
 
 $("#btnActivate").addEventListener("click", async () => {
   const key = $("#licenseInput").value.trim();
-  if (!key) return licStatus("先粘贴 Key", false);
+  if (!key) return licStatus(t("licPasteFirst"), false);
   const v = await Lic.verify(key, CONFIG.SECRET);
-  if (!v.ok) return licStatus("Key 无效或已过期", false);
+  if (!v.ok) return licStatus(t("licInvalid"), false);
   await chrome.storage.local.set({ [STORE_LICENSE]: { key, plan: v.plan, label: v.label, exp: v.exp } });
-  licStatus(`激活成功（${v.label || v.plan}）`, true);
+  licStatus(t("licActivated", { label: v.label || v.plan }), true);
   await load();
   render();
 });
 $("#btnDeactivate").addEventListener("click", async () => {
   await chrome.storage.local.remove(STORE_LICENSE);
-  licStatus("已解除本设备", true);
+  licStatus(t("licDeactivated"), true);
   await load();
   render();
 });
@@ -245,15 +259,23 @@ function licStatus(text, ok) {
 }
 
 $("#chkAuto").addEventListener("change", async (e) => {
-  if (!isPro()) { e.target.checked = false; return upgradeNeeded("自动备份属于 Pro"); }
+  if (!isPro()) { e.target.checked = false; return upgradeNeeded(t("tAutoPro")); }
   state.settings.autoOn = e.target.checked;
   await chrome.storage.local.set({ [STORE_SETTINGS]: state.settings });
   chrome.runtime.sendMessage({ type: "SETTINGS_CHANGED" }).catch(() => {});
-  toast(e.target.checked ? `每 ${state.settings.intervalMin} 分钟自动备份当前窗口` : "自动备份已关闭");
+  toast(e.target.checked ? t("tAutoOn", { n: intervalMin() }) : t("tAutoOff"));
 });
 $("#chkDelAfterRestore").addEventListener("change", async (e) => {
   state.settings.delAfterRestore = e.target.checked;
   await chrome.storage.local.set({ [STORE_SETTINGS]: state.settings });
+});
+$("#selLang").addEventListener("change", async (e) => {
+  state.settings.langPref = e.target.value;
+  state.settings.langResolved = (I18N.setPref(e.target.value), I18N.lang());
+  document.documentElement.lang = state.settings.langResolved;
+  await chrome.storage.local.set({ [STORE_SETTINGS]: state.settings });
+  chrome.runtime.sendMessage({ type: "SETTINGS_CHANGED" }).catch(() => {});
+  render();
 });
 
 // ---------- 事件绑定 ----------
@@ -261,7 +283,7 @@ $("#btnSave").addEventListener("click", () => saveWindow());
 $("#btnSaveClose").addEventListener("click", () => saveWindow({ andClose: true }));
 $("#btnExport").addEventListener("click", exportAll);
 $("#searchBox").addEventListener("input", (e) => {
-  if (!isPro() && e.target.value) { e.target.value = ""; state.query = ""; return upgradeNeeded("跨会话搜索属于 Pro"); }
+  if (!isPro() && e.target.value) { e.target.value = ""; state.query = ""; return upgradeNeeded(t("tSearchPro")); }
   state.query = e.target.value.trim();
   render();
 });
@@ -271,20 +293,65 @@ chrome.runtime.onMessage.addListener((msg) => {
 
 // ---------- 预览演示数据（仅 ?demo= 生效，不影响正常使用） ----------
 const demo = (location.search.match(/demo=(\w+)/) || [])[1];
+const DEMO_POOL_EN = [
+  ["Notion — Q4 roadmap draft", "https://notion.so/wd/q4-roadmap"],
+  ["Figma — Session card UI v3", "https://figma.com/file/session-card-ui"],
+  ["GitHub — tabvault / issues", "https://github.com/wd9337812/tabvault/issues"],
+  ["Stripe docs — Checkout sessions", "https://docs.stripe.com/api/checkout/sessions"],
+  ["HN — Show HN: I got tired of losing tabs", "https://news.ycombinator.com/item?id=42000123"],
+  ["Google Flights — SFO → LIS, Nov 12", "https://www.google.com/travel/flights"],
+  ["Longreads — Deep Work in a Noisy World", "https://longreads.com/2026/09/deep-work"],
+  ["Linear — Backlog grooming", "https://linear.app/team/backlog"],
+  ["Gmail — Inbox (14 unread)", "https://mail.google.com/mail/u/0"],
+  ["MDN — chrome.storage API", "https://developer.mozilla.org/en-US/docs/Mozilla/Extensions/Chrome/chrome.storage"],
+  ["Notion — Competitor pricing matrix", "https://notion.so/wd/pricing-matrix"],
+  ["YouTube — MV3 service worker lifecycle", "https://youtube.com/watch?v=tabvault-demo"],
+  ["Chrome docs — Side Panel API", "https://developer.chrome.com/docs/extensions/reference/api/sidePanel"],
+  ["Reddit — r/productivity: tab overload", "https://reddit.com/r/productivity/comments/tab-overload"],
+];
+const DEMO_POOL_ZH = [
+  ["Notion — Q4 路线图草稿", "https://notion.so/wd/q4-roadmap"],
+  ["Figma — 会话卡片 UI v3", "https://figma.com/file/session-card-ui"],
+  ["GitHub — tabvault / issues", "https://github.com/wd9337812/tabvault/issues"],
+  ["语雀 — 自动备份方案评审", "https://yuque.com/tabvault/auto-backup"],
+  ["HN — 又丢标签页了怎么办", "https://news.ycombinator.com/item?id=42000123"],
+  ["Google 机票 — SFO → LIS 11/12", "https://www.google.com/travel/flights"],
+  ["少数派 — 我如何治理 60 个标签页", "https://sspai.com/post/tab-vault"],
+  ["Linear — 待办梳理", "https://linear.app/team/backlog"],
+  ["Gmail — 收件箱（14 封未读）", "https://mail.google.com/mail/u/0"],
+  ["MDN — chrome.storage API", "https://developer.mozilla.org/en-US/docs/Mozilla/Extensions/Chrome/chrome.storage"],
+  ["Notion — 竞品定价对照表", "https://notion.so/wd/pricing-matrix"],
+  ["B 站 — MV3 Service Worker 生命周期", "https://bilibili.com/video/tabvault-demo"],
+  ["Chrome 文档 — Side Panel API", "https://developer.chrome.com/docs/extensions/reference/api/sidePanel"],
+  ["知乎 — 标签页太多怎么整理", "https://zhihu.com/question/tab-overload"],
+];
 async function seedDemo() {
-  const mk = (name, host, n, agoH) => ({
-    id: uid(), name, createdAt: Date.now() - agoH * 36e5, auto: false,
-    tabs: Array.from({ length: n }, (_, i) => ({ title: `${host} page ${i + 1} — reading list`, url: `https://${host}.com/${name.slice(0, 3)}-${i}` })),
+  const zh = I18N.lang() === "zh";
+  const pool = zh ? DEMO_POOL_ZH : DEMO_POOL_EN;
+  const names = zh
+    ? ["Q4 规划调研", "竞品 + 设计参考", "写稿资料", "旅行计划", "周报模板收集", "旧项目收尾"]
+    : ["Q4 planning research", "Competitors + design refs", "Writing sources", "Trip planning", "Weekly report digging", "Old project wrap-up"];
+  const spans = [8, 12, 6, 4, 7, 3];
+  const ages = [1, 5, 26, 50, 74, 98];
+  let cursor = 0;
+  const mk = (idx) => ({
+    id: uid(), name: names[idx], createdAt: Date.now() - ages[idx] * 36e5, auto: false,
+    tabs: Array.from({ length: spans[idx] }, () => {
+      const [title, url] = pool[cursor % pool.length];
+      cursor += 1;
+      return { title, url: url + (url.includes("?") ? "&" : "?") + "p=" + cursor };
+    }),
   });
-  state.sessions = [
-    mk("Q4 规划调研", "notion", 8, 1),
-    mk("竞品 + 设计参考", "figma", 12, 5),
-    { id: uid(), name: "Auto backup · 今天 14:30", createdAt: Date.now() - 2 * 36e5, auto: true, tabs: Array.from({ length: 5 }, (_, i) => ({ title: `HN discussion ${i + 1}`, url: `https://news.ycombinator.com/item?id=${100 + i}` })) },
-    mk("写稿资料", "github", 6, 26),
-    mk("旅行计划", "google", 4, 50),
-    mk("周报模板搜索", "linear", 7, 74),
-    mk("旧项目收尾", "figma", 3, 98),
-  ];
+  const autoCard = {
+    id: uid(), name: zh ? "自动备份 · 今天 14:30" : "Auto backup · today 14:30",
+    createdAt: Date.now() - 2 * 36e5, auto: true,
+    tabs: pool.slice(4, 9).map(([title, url]) => ({ title, url })),
+  };
+  const manual = names.map((_, i) => mk(i));
+  // 免费版没有自动备份，且正好卡在 5 个会话的上限
+  state.sessions = demo === "free"
+    ? manual.slice(0, CONFIG.FREE.maxManualSessions)
+    : [manual[0], manual[1], autoCard, ...manual.slice(2)];
   if (demo === "pro" || demo === "paywall") { state.plan = "pro"; state.settings.plan = "pro"; }
   if (demo === "paywall") { $("#drawer").classList.remove("hidden"); }
 }
@@ -293,4 +360,6 @@ async function seedDemo() {
   await load();
   if (demo) await seedDemo();
   render();
+  // 预览态默认展开前几张，截图里能看到标签列表
+  if (demo) $$(".session").slice(0, 3).forEach((n) => n.classList.add("open"));
 })();

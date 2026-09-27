@@ -191,3 +191,10 @@ body {
 
 /* 搜索命中高亮 */
 mark { background: rgba(155,107,255,.35); color: var(--txt); border-radius: 3px; padding: 0 2px; }
+
+/* 语言选择 */
+.lang-select {
+  width: 100%; background: var(--card); border: 1px solid var(--line); color: var(--txt);
+  border-radius: 9px; padding: 8px 10px; font-size: 12.5px; outline: none; cursor: pointer;
+}
+.lang-select:focus { border-color: var(--brand); }

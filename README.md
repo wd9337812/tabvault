@@ -6,12 +6,14 @@
 
 ## 界面预览
 
-| Pro 全功能态 | 付费墙（免费用户点升级） |
-|---|---|
-| ![pro](previews/pro-view.png) | ![paywall](previews/paywall-view.png) |
+| Pro（英文界面） | 付费墙 | Pro（中文界面） |
+|---|---|---|
+| ![pro](previews/en-pro.png) | ![paywall](previews/en-paywall.png) | ![zh](previews/zh-pro.png) |
 
 > 本地预览：浏览器直接打开 `sidepanel.html?demo=pro`（或 `=free` / `=paywall`），
-> 页面内置开发桩，不影响真实扩展环境。
+> 加 `&lang=en` / `&lang=zh` 强制切换语言。页面内置开发桩，不影响真实扩展环境。
+> 界面语言默认跟随浏览器（`navigator.language`），也可在设置抽屉里手动选，
+> 全部文案在 [`i18n.js`](i18n.js) 一个文件里，加第三语言只需再补一份字典。
 
 ---
 
@@ -36,6 +38,7 @@
 | 自动备份保留份数 | — | 20 |
 | 跨会话搜索所有标签 | 🔒 | ✅ |
 | 导出 / 导入 JSON 备份 | 🔒 | ✅ |
+| 界面语言（English / 中文，跟随浏览器 + 可手动固定） | ✅ | ✅ |
 
 ### 怎么调免费额度（改一个文件即生效）
 
@@ -65,6 +68,7 @@ tab-vault/
 ├── manifest.json      # MV3；权限只有 storage / tabs / alarms / sidePanel（无 host_permissions，审核最快）
 ├── background.js      # service worker：自动备份 alarm、快捷键、徽标计数
 ├── config.js          # ★ 唯一调参点：SECRET / 收款链接 / FREE / PRO 门控
+├── i18n.js            # en / zh 文案字典 + 自动按浏览器语言切换
 ├── license.js         # HMAC-SHA256 验签（纯本地）
 ├── sidepanel.{html,css,js}   # 主 UI，含 ?demo= 预览桩
 ├── worker/            # Cloudflare Worker：/buy 跳转 Stripe、/success 验支付后签发 key

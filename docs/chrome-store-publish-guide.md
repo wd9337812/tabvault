@@ -14,7 +14,7 @@
 
 | 材料 | 规格（商店硬性要求） | 位置 |
 |------|---------------------|------|
-| 代码包 zip | manifest 合法、`description` ≤132 字符（当前 116） | `5b75f644/tabvault-extension-store.zip`（45,752 B） |
+| 代码包 zip | manifest 合法、`description` ≤132 字符（当前 116） | `5b75f644/tabvault-extension-store.zip`（50,770 B，8 个源文件 + 3 个图标） |
 | 屏幕截图 | **必须 1280x800 或 640x400**，JPEG 或 24 位 PNG（无 alpha），1~5 张 | `5b75f644/tabvault-store-images/shot-1-pro.jpg` … `shot-4-paywall.jpg`（4 张，全 1280x800 / 24bpp） |
 | 小型宣传图块 | 440x280，可选但建议传 | `tabvault-store-images/tile-small.jpg` |
 | 顶部宣传图块 | 1400x560，可选 | `tabvault-store-images/tile-top.jpg` |
@@ -62,8 +62,8 @@ https://wd9337812.github.io/tabvault/SUPPORT.html
 ## 3. 后台标签页 ①「软件包」
 
 上传 `tabvault-extension-store.zip`。上传后这一页应无红字；有红字原样截图发我。
-包内只含 7 个源文件 + icons，没有 README / dev / worker / tools（商店不接受多余无关文件，
-且这些会暴露部署细节）。
+包内只含 8 个源文件（manifest / background / config / i18n / license / sidepanel 三件套）+ icons，
+没有 README / dev / worker / tools（商店不接受多余无关文件，且这些会暴露部署细节）。
 
 ---
 
@@ -117,8 +117,8 @@ Support: https://wd9337812.github.io/tabvault/SUPPORT.html
 | 字段 | 填什么 |
 |---|---|
 | 类别 | **Productivity / 生产力** |
-| 语言 | 默认 English（界面文案目前为中文，可「添加语言」再传一份中文文案，不强制） |
-| 屏幕截图（1~5 张） | 顺序建议：`shot-1-pro.jpg` → `shot-2-pro.jpg` → `shot-3-pro.jpg` → `shot-4-paywall.jpg` |
+| 语言 | **English**（界面已内置 en/zh 自动切换：英文浏览器出英文、中文浏览器出中文，设置抽屉里还能手动固定。可再点「添加语言」挂一份中文 listing 文案，不强制） |
+| 屏幕截图（1~5 张） | 顺序建议：`shot-1-pro.jpg` → `shot-2-pro.jpg` → `shot-3-pro.jpg` → `shot-4-paywall.jpg`（均为英文界面，与 English listing 一致） |
 | 小型宣传图块 | `tile-small.jpg`（440x280） |
 | 顶部宣传图块 | `tile-top.jpg`（1400x560） |
 | 其他字段 → 首页网址 | `https://wd9337812.github.io/tabvault/` |

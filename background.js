@@ -3,10 +3,22 @@
 // ============================================================
 //  职责：侧边栏行为、快捷键保存、自动备份 alarm、角标。
 //  数据与 UI 都在 sidepanel.js；这里只做"面板没打开也得干活"的部分。
+//  文案：service worker 里没有 navigator.language，所以语言取面板写回的
+//  tv_settings.langResolved（默认 en）。
+
+importScripts("i18n.js");
 
 const STORE_SESSIONS = "tv_sessions";
 const STORE_SETTINGS = "tv_settings";
 const ALARM_AUTOSAVE = "tv-autosave";
+
+async function syncLang() {
+  try {
+    const d = await chrome.storage.local.get(STORE_SETTINGS);
+    const s = (d && d[STORE_SETTINGS]) || {};
+    I18N.setPref(s.langResolved || s.langPref || "auto");
+  } catch { /* 首次运行没有设置，用默认 en */ }
+}
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.sidePanel
@@ -38,9 +50,9 @@ function sessionName(tabs) {
   try {
     const hosts = [...new Set(tabs.map((t) => { try { return new URL(t.url).hostname.replace(/^www\./, ""); } catch { return ""; } }))].filter(Boolean);
     const head = hosts.slice(0, 3).join(", ");
-    return `${head}${hosts.length > 3 ? ` +${hosts.length - 3}` : ""} · ${tabs.length} tabs`;
+    return `${head || I18N.t("windowWord")}${hosts.length > 3 ? ` +${hosts.length - 3}` : ""} ${I18N.t("tabsSuffix", { n: tabs.length })}`;
   } catch {
-    return `Window ${new Date().toLocaleString()}`;
+    return `${I18N.t("windowWord")} ${new Date().toLocaleString()}`;
   }
 }
 
@@ -53,6 +65,7 @@ async function updateBadge() {
 
 // ---------- 保存会话（快捷键 / 面板共用逻辑的核心） ----------
 async function saveCurrentWindow({ auto = false } = {}) {
+  await syncLang();
   const tabs = await snapshotActiveWindow();
   if (!tabs.length) return { ok: false, reason: "empty" };
 
@@ -64,7 +77,7 @@ async function saveCurrentWindow({ auto = false } = {}) {
     if (lastAuto && tabSig(lastAuto.tabs) === tabSig(tabs)) return { ok: true, skipped: true };
     const keep = settings.autoOn ? 20 : 1;
     const others = sessions.filter((s) => !s.auto);
-    const fresh = { id: "auto_" + Date.now(), name: "Auto backup · " + new Date().toLocaleString(), createdAt: Date.now(), auto: true, tabs };
+    const fresh = { id: "auto_" + Date.now(), name: I18N.t("autoName", { time: new Date().toLocaleString() }), createdAt: Date.now(), auto: true, tabs };
     const trimmed = [fresh, ...others.filter((s) => Date.now() - s.createdAt < 30 * 864e5)].slice(0, others.length + keep);
     await chrome.storage.local.set({ [STORE_SESSIONS]: trimmed });
     notifyPanel();
