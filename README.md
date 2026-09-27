@@ -95,6 +95,9 @@ tab-vault/
 
 ## 4. 部署收款（首次上线，按顺序做）
 
+> 点击级完整清单（含测试验收、切 live、GitHub/Pages、CWS 提审与故障速查）：
+> [docs/launch-checklist.md](docs/launch-checklist.md)。本节为速览。
+
 ```bash
 cd tab-vault
 node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"   # 换新 SECRET，同步到 config.js
