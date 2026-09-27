@@ -1,0 +1,10 @@
+# 本地真密钥/真配置与打包产物，勿提交
+dev/
+*.crx
+*.pem
+*.zip
+
+# 杂项
+.DS_Store
+node_modules/
+worker/.wrangler/

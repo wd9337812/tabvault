@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TabVault</title>
+  <link rel="stylesheet" href="sidepanel.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="bar">
+      <div class="brand">
+        <span class="logo"></span>
+        <strong>TabVault</strong>
+      </div>
+      <div class="bar-right">
+        <span id="planBadge" class="plan plan-free">FREE</span>
+        <button id="btnUpgrade" class="icon-btn" title="Pro / Settings">⚙</button>
+      </div>
+    </header>
+
+    <section class="capture">
+      <button id="btnSave" class="capture-btn" title="把当前窗口所有标签保存为会话 (Alt+Shift+S)">
+        <span class="plus">＋</span> 保存当前窗口
+      </button>
+      <div class="search-row">
+        <input id="searchBox" class="quick-add" type="text" placeholder="搜索会话里的标签… (Pro)" />
+        <button id="btnSaveClose" class="mini-btn" title="保存后关闭当前窗口标签，释放内存">存后关闭</button>
+      </div>
+    </section>
+
+    <main id="sessionList" class="task-list"></main>
+
+    <footer class="foot">
+      <span id="counter">0 个会话</span>
+      <div class="foot-actions">
+        <button id="btnExport" class="link-btn">导出</button>
+        <button id="btnImport" class="link-btn">导入</button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- 升级 / 设置抽屉 -->
+  <div id="drawer" class="drawer hidden">
+    <div class="drawer-head">
+      <h3>TabVault Pro</h3>
+      <button id="btnCloseDrawer" class="icon-btn">✕</button>
+    </div>
+    <div class="drawer-body">
+      <ul class="pro-points">
+        <li>无限手动会话（免费 5 个）</li>
+        <li>每 15 分钟自动备份，崩溃后一键找回</li>
+        <li>跨会话搜索所有标签</li>
+        <li>导出 / 导入 JSON 备份</li>
+      </ul>
+
+      <div class="price-card">
+        <div class="price">
+          <span class="amount">$6</span>
+          <span class="per">一次性买断 · 全平台</span>
+        </div>
+        <a id="btnBuy" class="buy-btn" href="#" target="_blank" rel="noopener">购买 Pro</a>
+        <p class="buy-note">付款后你会收到 License Key，粘贴到下方即可激活。</p>
+      </div>
+
+      <div class="activate">
+        <label>已有 License Key？</label>
+        <textarea id="licenseInput" placeholder="PRO·xxxx.yyyy 粘贴到这里"></textarea>
+        <div class="activate-row">
+          <button id="btnActivate" class="buy-btn ghost">激活</button>
+          <button id="btnDeactivate" class="link-btn">解除本设备</button>
+        </div>
+        <p id="licStatus" class="lic-status"></p>
+      </div>
+
+      <div class="lists-admin">
+        <h4>自动备份</h4>
+        <label class="switch-row">
+          <input type="checkbox" id="chkAuto" />
+          <span>开启后每 <b id="lblInterval">15</b> 分钟备份当前窗口（Pro）</span>
+        </label>
+        <label class="switch-row">
+          <input type="checkbox" id="chkDelAfterRestore" />
+          <span>恢复会话后自动删除该会话</span>
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <input type="file" id="fileImport" accept=".json" class="hidden" />
+
+  <script>
+  // 预览/开发专用：file:// 直接打开本文件时提供 chrome.* 最小桩（?demo=pro|free|paywall）。
+  // 真实扩展环境中不生效。
+  if (typeof chrome === "undefined" || !chrome.storage) {
+    const fakeTabs = (n) => Array.from({ length: n }, (_, i) => ({
+      title: ["Deep Work essay — Longreads", "Q3 roadmap — Notion", "Inbox — Gmail",
+              "TabTasks pricing page", "GitHub notifications", "Figma — Sidebar redesign",
+              "Hacker News front page", "Linear — Issues board"][i % 8] + " " + Math.ceil((i + 1) / 8),
+      url: ["longreads.com","notion.so","mail.google.com","tabtasks.app","github.com","figma.com","news.ycombinator.com","linear.app"][i % 8] + ".com/page-" + i,
+    }));
+    window.chrome = {
+      storage: { local: { get: async () => ({}), set: async () => {}, remove: async () => {} } },
+      runtime: { sendMessage: () => Promise.resolve(), onMessage: { addListener: () => {} }, getURL: (p) => p },
+      tabs: {
+        query: async (q) => (q && q.currentWindow ? fakeTabs(6) : fakeTabs(3)),
+        create: async () => ({}), remove: async () => {},
+      },
+      windows: { create: async () => ({ id: 1 }), get: async () => ({ id: 1 }), remove: async () => {} },
+      alarms: { create: () => {}, clear: () => {} },
+    };
+    window.__demoFakeTabs = fakeTabs;
+  }
+  </script>
+  <script src="config.js"></script>
+  <script src="license.js"></script>
+  <script src="sidepanel.js"></script>
+</body>
+</html>

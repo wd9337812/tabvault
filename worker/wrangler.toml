@@ -1,0 +1,17 @@
+# wrangler.toml — TabVault Cloudflare Worker 部署配置
+# 部署:  npx wrangler secret put LIC_SECRET        # 与扩展 config.js 的 SECRET 一致
+#        npx wrangler secret put STRIPE_SECRET_KEY # sk_live_…（测完记得轮换）
+#        npx wrangler deploy
+# 免费版：每天 10 万次请求，本场景远用不完 => 0 成本
+
+name = "tabvault-pro-api"
+main = "index.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+# 你的 Stripe Payment Link（TabVault 专用，需在 Stripe 后台新建一个 $6 一次性链接）
+# setup.mjs 向导会自动回填这里
+STRIPE_PAYMENT_LINK = ""
+
+# LIC_SECRET / STRIPE_SECRET_KEY 不要写在这里！用命令行注入：
+#   npx wrangler secret put LIC_SECRET
