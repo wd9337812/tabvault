@@ -2,7 +2,7 @@
 
 一键把整个窗口的标签存成「会话」，随时全部恢复；Pro 每 15 分钟自动备份，
 崩溃 / 误关窗口后再也不丢标签页。纯本地存储（`chrome.storage.local`）、零后端、
-零第三方 API，免费 + Pro 一次性 $6 买断，Pro 用 HMAC License Key 本地验签门控。
+零第三方 API，免费 + Pro 一次性买断（$6 起售价，划线锚定 $9），Pro 用 HMAC License Key 本地验签门控。
 
 ## 界面预览
 
@@ -11,9 +11,11 @@
 | ![pro](previews/en-pro.png) | ![paywall](previews/en-paywall.png) | ![zh](previews/zh-pro.png) |
 
 > 本地预览：浏览器直接打开 `sidepanel.html?demo=pro`（或 `=free` / `=paywall`），
-> 加 `&lang=en` / `&lang=zh` 强制切换语言。页面内置开发桩，不影响真实扩展环境。
-> 界面语言默认跟随浏览器（`navigator.language`），也可在设置抽屉里手动选，
-> 全部文案在 [`i18n.js`](i18n.js) 一个文件里，加第三语言只需再补一份字典。
+> 加 `&lang=en` / `&lang=zh` 强制切换语言、`&theme=light` / `&theme=dark` 强制切换主题。
+> 页面内置开发桩，不影响真实扩展环境。
+> 界面语言默认跟随浏览器（`navigator.language`），主题默认跟随系统（`prefers-color-scheme`），
+> 两者都可在设置抽屉里手动固定；文案在 [`i18n.js`](i18n.js)、配色在
+> [`sidepanel.css`](sidepanel.css) 顶部的 token 表（浅色只覆盖 `:root[data-theme="light"]` 一段）。
 
 ---
 
@@ -39,6 +41,7 @@
 | 跨会话搜索所有标签 | 🔒 | ✅ |
 | 导出 / 导入 JSON 备份 | 🔒 | ✅ |
 | 界面语言（English / 中文，跟随浏览器 + 可手动固定） | ✅ | ✅ |
+| 浅色 / 深色主题（跟随系统 + 可手动固定）、真实站点 favicon | ✅ | ✅ |
 
 ### 怎么调免费额度（改一个文件即生效）
 
@@ -83,8 +86,10 @@ tab-vault/
 - 截图 `../tabvault-store-images/`：4 张 1280x800 + tile-small 440x280 + tile-top 1400x560
 - 重新打包：`powershell -File dev\repack-store.ps1`
 
-隐私说明：所有数据只写在本机 `chrome.storage.local`，扩展不发起任何网络请求
-（除用户主动点「购买」打开收款页）。`tabs` 权限用于读取标签标题与 URL 以保存会话。
+隐私说明：所有数据只写在本机 `chrome.storage.local`，扩展不向我们的任何服务器发送数据
+（除用户主动点「购买」打开收款页）。会话卡片会加载保存时记录的站点 favicon——直接向该站点
+自身域名请求，与浏览器画标签图标相同，不经过第三方中转。`tabs` 权限用于读取标签标题、URL
+与 favicon 地址以保存会话。
 
 ---
 
@@ -102,6 +107,7 @@ cd .. && node setup.mjs                     # 向导：登录、部署、回填�
 
 Stripe 侧只需两次点击（API 改不了）：
 1. 建一个 **$6 一次性** Payment Link，链接填进 `worker/wrangler.toml` 的 `STRIPE_PAYMENT_LINK`；
+   实收 $6，界面上的 `$9` 只是划线锚定价（文案在 `i18n.js` 的 `priceNow` / `priceWas`）；
 2. 该链接的 **After completion → Redirect to URL** 设为
    `https://tabvault-pro-api.wd933781.workers.dev/success?sid={CHECKOUT_SESSION_ID}`。
 

@@ -43,7 +43,7 @@ function tabSig(tabs) {
 
 async function snapshotActiveWindow() {
   const tabs = await chrome.tabs.query({ currentWindow: true });
-  return tabs.filter((t) => isSaveableUrl(t.url)).map((t) => ({ title: t.title || t.url, url: t.url }));
+  return tabs.filter((t) => isSaveableUrl(t.url)).map((t) => ({ title: t.title || t.url, url: t.url, fav: t.favIconUrl || "" }));
 }
 
 function sessionName(tabs) {

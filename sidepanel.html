@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>TabVault</title>
+  <script>
+    // 开面板瞬间先按系统偏好落一个主题，避免闪一下深色；
+    // sidepanel.js 加载后会按用户存的偏好（auto/light/dark）覆盖。
+    document.documentElement.dataset.theme =
+      matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  </script>
   <link rel="stylesheet" href="sidepanel.css" />
 </head>
 <body>
@@ -55,12 +61,14 @@
       </ul>
 
       <div class="price-card">
+        <span class="launch-pill" data-i18n="launch">Launch price</span>
         <div class="price">
-          <span class="amount">$6</span>
-          <span class="per" data-i18n="per">one-time · all your devices</span>
+          <span class="amount" data-i18n="priceNow">$6</span>
+          <span class="was" data-i18n="priceWas">$9</span>
+          <span class="per" data-i18n="per">one-time · lifetime updates</span>
         </div>
         <a id="btnBuy" class="buy-btn" href="#" target="_blank" rel="noopener" data-i18n="buy">Buy Pro</a>
-        <p class="buy-note" data-i18n="buyNote">You get a License Key after payment.</p>
+        <p class="buy-note" data-i18n="buyNote">Pay once — you get a License Key after payment, paste it below to activate.</p>
       </div>
 
       <div class="activate">
@@ -93,6 +101,12 @@
           <option value="en">English</option>
           <option value="zh">中文</option>
         </select>
+        <h4 class="gap" data-i18n="themeHead">Appearance 外观</h4>
+        <select id="selTheme" class="lang-select">
+          <option value="auto" data-i18n="themeAuto">Auto (system)</option>
+          <option value="light" data-i18n="themeLight">Light</option>
+          <option value="dark" data-i18n="themeDark">Dark</option>
+        </select>
         <p class="buy-note" data-i18n="note">All sessions stay in this browser.</p>
       </div>
     </div>
@@ -118,6 +132,7 @@
     const fakeTabs = (n) => Array.from({ length: n }, (_, i) => ({
       title: DEMO_SITES[i % 8][0],
       url: DEMO_SITES[i % 8][1] + "?p=" + i,
+      favIconUrl: "https://www.google.com/s2/favicons?domain=" + new URL(DEMO_SITES[i % 8][1]).hostname + "&sz=64",
     }));
     window.chrome = {
       storage: { local: { get: async () => ({}), set: async () => {}, remove: async () => {} } },

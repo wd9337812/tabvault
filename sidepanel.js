@@ -11,7 +11,7 @@ const STORE_LICENSE = "tv_license";
 
 const state = {
   sessions: [],
-  settings: { autoOn: false, intervalMin: CONFIG.AUTO_INTERVAL_MIN, delAfterRestore: false, plan: "free", langPref: "auto" },
+  settings: { autoOn: false, intervalMin: CONFIG.AUTO_INTERVAL_MIN, delAfterRestore: false, plan: "free", langPref: "auto", themePref: "auto" },
   plan: "free",
   query: "",
 };
@@ -33,6 +33,13 @@ function isPro() { return state.plan === "pro"; }
 function caps() { return isPro() ? CONFIG.PRO : CONFIG.FREE; }
 function intervalMin() { return state.settings.intervalMin || CONFIG.AUTO_INTERVAL_MIN; }
 
+// ---------- 主题（auto 跟随系统，可手动固定 light/dark） ----------
+const MQ_LIGHT = matchMedia("(prefers-color-scheme: light)");
+function themePref() { const p = state.settings.themePref; return p === "light" || p === "dark" ? p : "auto"; }
+function resolveTheme() { return themePref() === "auto" ? (MQ_LIGHT.matches ? "light" : "dark") : themePref(); }
+function applyTheme() { document.documentElement.dataset.theme = resolveTheme(); }
+MQ_LIGHT.addEventListener("change", () => { if (themePref() === "auto") applyTheme(); });
+
 async function load() {
   const d = await chrome.storage.local.get([STORE_SESSIONS, STORE_SETTINGS, STORE_LICENSE]);
   state.sessions = d[STORE_SESSIONS] || [];
@@ -49,6 +56,10 @@ async function load() {
   state.settings.langPref = forced || state.settings.langPref || "auto";
   state.settings.langResolved = I18N.lang();          // service worker 命名自动备份用
   document.documentElement.lang = state.settings.langResolved;
+  // 主题：?theme= 只用于截图/调试，不写回存储
+  const forcedTheme = (location.search.match(/theme=(light|dark)/) || [])[1];
+  if (forcedTheme) document.documentElement.dataset.theme = forcedTheme;
+  else applyTheme();
   await chrome.storage.local.set({ [STORE_SETTINGS]: state.settings });
 }
 async function saveSessions() {
@@ -86,7 +97,7 @@ async function saveWindow({ andClose = false } = {}) {
     name: sessionName(tabs),
     createdAt: Date.now(),
     auto: false,
-    tabs: tabs.filter((x) => !seen.has(x.url) && seen.add(x.url)).map((x) => ({ title: x.title || x.url, url: x.url })),
+    tabs: tabs.filter((x) => !seen.has(x.url) && seen.add(x.url)).map((x) => ({ title: x.title || x.url, url: x.url, fav: x.favIconUrl || "" })),
   };
   state.sessions.unshift(session);
   await saveSessions();
@@ -152,7 +163,7 @@ function render() {
 
   const el = $("#sessionList");
   if (!list.length) {
-    el.innerHTML = `<div class="empty">${q ? t("emptySearch") : t("empty")}</div>`;
+    el.innerHTML = `<div class="empty"><div class="empty-ico">${q ? "🔍" : "🗂"}</div>${q ? t("emptySearch") : t("empty")}</div>`;
   } else {
     el.innerHTML = list.map(({ s, tabs }) => `
       <div class="session ${s.auto ? "auto" : ""}" data-id="${s.id}">
@@ -163,7 +174,7 @@ function render() {
           <span class="sess-time">${timeAgo(s.createdAt)}</span>
         </div>
         <ul class="sess-tabs">${tabs.slice(0, 12).map((x) => `
-          <li><span class="fav"></span><a href="${esc(x.url)}" target="_blank" rel="noopener" title="${esc(x.url)}">${hl(x.title)}</a></li>`).join("")}
+          <li><span class="fav">${x.fav ? `<img src="${esc(x.fav)}" alt="" loading="lazy" onerror="this.remove()">` : ""}</span><a href="${esc(x.url)}" target="_blank" rel="noopener" title="${esc(x.url)}">${hl(x.title)}</a></li>`).join("")}
           ${tabs.length > 12 ? `<li><span class="fav" style="opacity:.3"></span><span style="color:var(--muted);font-size:12px">${esc(t("more", { n: tabs.length - 12 }))}</span></li>` : ""}
         </ul>
         <div class="sess-actions">
@@ -186,6 +197,7 @@ function render() {
   $("#lblInterval").textContent = intervalMin();
   $("#btnBuy").href = CONFIG.STRIPE_PAYMENT_LINK;
   $("#selLang").value = state.settings.langPref || "auto";
+  $("#selTheme").value = themePref();
   // 抽屉里的数量/间隔提示跟随实际配置
   $$("[data-i18n='p1']").forEach((n) => (n.innerHTML = t("p1", { max: CONFIG.FREE.maxManualSessions })));
   $$("[data-i18n='p2']").forEach((n) => (n.innerHTML = t("p2", { n: intervalMin() })));
@@ -277,6 +289,11 @@ $("#selLang").addEventListener("change", async (e) => {
   chrome.runtime.sendMessage({ type: "SETTINGS_CHANGED" }).catch(() => {});
   render();
 });
+$("#selTheme").addEventListener("change", async (e) => {
+  state.settings.themePref = e.target.value;
+  applyTheme();
+  await chrome.storage.local.set({ [STORE_SETTINGS]: state.settings });
+});
 
 // ---------- 事件绑定 ----------
 $("#btnSave").addEventListener("click", () => saveWindow());
@@ -328,6 +345,8 @@ const DEMO_POOL_ZH = [
 async function seedDemo() {
   const zh = I18N.lang() === "zh";
   const pool = zh ? DEMO_POOL_ZH : DEMO_POOL_EN;
+  // 演示数据也带真实站点 favicon（截图里列表才不像线框稿）；加载失败自动回落渐变方块
+  const favOf = (url) => { try { return "https://www.google.com/s2/favicons?domain=" + new URL(url).hostname + "&sz=64"; } catch { return ""; } };
   const names = zh
     ? ["Q4 规划调研", "竞品 + 设计参考", "写稿资料", "旅行计划", "周报模板收集", "旧项目收尾"]
     : ["Q4 planning research", "Competitors + design refs", "Writing sources", "Trip planning", "Weekly report digging", "Old project wrap-up"];
@@ -339,13 +358,14 @@ async function seedDemo() {
     tabs: Array.from({ length: spans[idx] }, () => {
       const [title, url] = pool[cursor % pool.length];
       cursor += 1;
-      return { title, url: url + (url.includes("?") ? "&" : "?") + "p=" + cursor };
+      const full = url + (url.includes("?") ? "&" : "?") + "p=" + cursor;
+      return { title, url: full, fav: favOf(url) };
     }),
   });
   const autoCard = {
     id: uid(), name: zh ? "自动备份 · 今天 14:30" : "Auto backup · today 14:30",
     createdAt: Date.now() - 2 * 36e5, auto: true,
-    tabs: pool.slice(4, 9).map(([title, url]) => ({ title, url })),
+    tabs: pool.slice(4, 9).map(([title, url]) => ({ title, url, fav: favOf(url) })),
   };
   const manual = names.map((_, i) => mk(i));
   // 免费版没有自动备份，且正好卡在 5 个会话的上限

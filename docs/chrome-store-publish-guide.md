@@ -101,7 +101,7 @@ MADE FOR FOCUS
 • Rename, delete, per-session tab counts
 • 100% local — sessions live in chrome.storage on your device; no account, no tracking
 
-PRO (one-time, lifetime license)
+PRO (one-time $6 launch price, regular $9 — lifetime license, no subscription)
 • Unlimited sessions (free: 5 saved sessions)
 • Auto-backup every 15 minutes, rolling 20 snapshots
 • Search across all saved tabs
@@ -153,7 +153,7 @@ chrome.storage.local is the extension's only persistence layer: it stores the us
 **tabs**
 
 ```
-Reads the title and URL of the tabs in the window the user chooses to save, so a session can be rebuilt later; the same data is used to create a new window on restore and to close the tabs the user explicitly clicked "Save & close" on. This permission is used only at those moments: the extension does not read browsing history, does not monitor tab changes continuously, and does not track which pages the user visits.
+Reads the title, URL and favicon address of the tabs in the window the user chooses to save, so a session can be rebuilt later with its site icons; the same data is used to create a new window on restore and to close the tabs the user explicitly clicked "Save & close" on. Saved favicons are displayed by loading them directly from each site's own origin, with no third-party service involved. This permission is used only at those moments: the extension does not read browsing history, does not monitor tab changes continuously, and does not track which pages the user visits.
 ```
 
 **alarms**
@@ -230,6 +230,8 @@ https://wd9337812.github.io/tabvault/PRIVACY.html
 商店审核**不要求**付费功能真的能用，但你自己要先测通再对外宣传：
 
 1. 建 Stripe **$6 一次性** Payment Link → 链接填进 `worker/wrangler.toml` 的 `STRIPE_PAYMENT_LINK`
+   （实收 $6；界面与落地页上的 `$9` 只是划线锚定价，文案在 `i18n.js` 的 `priceNow/priceWas`，
+   以后提价改这两个键 + 新建一条 Payment Link 即可，老 key 不受影响）
 2. `cd tab-vault/worker && npx wrangler deploy`
 3. `npx wrangler secret put LIC_SECRET`（值 = config.js 里的 SECRET）
    `npx wrangler secret put STRIPE_SECRET_KEY`（Stripe sk_live_…）

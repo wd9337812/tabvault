@@ -37,6 +37,13 @@ It never leaves your device, it is never synced to us, and it is deleted permane
 you remove the extension or clear your browser data. Optionally you can export that local
 data to a JSON file yourself; that file is created and kept by you alone.</p>
 
+<p><strong>Site icons (favicons).</strong><br>
+When a session is saved, TabVault also remembers each tab's favicon address — the icon URL the
+site itself publishes. The panel shows those icons by loading them <em>directly from the site's
+own origin</em>, exactly as your browser does when it draws a tab icon. No icon is fetched
+through us or through any third-party service, and nothing about your sessions is sent anywhere
+in the process.</p>
+
 <p><strong>Why does the extension request the permissions it does?</strong><br>
 <code>tabs</code> — read the title and URL of the tabs in the window you choose to save, so the
 session can be rebuilt later. It is read at the moment you press "Save" (or when auto-backup
@@ -69,6 +76,11 @@ https://github.com/wd9337812/tabvault or email the developer via the GitHub prof
 <code>chrome.storage</code> 写入你自己的浏览器本地，永不离开设备，也不会同步给我们；
 卸载扩展或清除浏览器数据即永久删除。你也可以自行把本地数据导出为 JSON 文件，该文件
 只由你保存。</p>
+
+<p><strong>站点图标（favicon）。</strong><br>
+保存会话时，TabVault 会一并记录每个标签的图标地址（站点自己公开的 icon 地址）。面板展示时
+<em>直接向该站点自身的域名</em>加载图标，与浏览器绘制标签图标的方式完全相同；不经过我们或任何
+第三方服务中转，过程中也不会把会话信息发送到任何地方。</p>
 
 <p><strong>为什么要这些权限？</strong><br>
 <code>tabs</code>：读取你主动保存的那个窗口中标签的标题与网址，以便之后恢复。只在你点击
