@@ -9,9 +9,9 @@ main = "index.js"
 compatibility_date = "2026-09-01"
 
 [vars]
-# 你的 Stripe Payment Link（TabVault 专用，需在 Stripe 后台新建一个 $6 一次性链接）
-# setup.mjs 向导会自动回填这里
-STRIPE_PAYMENT_LINK = ""
+# 你的 Stripe Payment Link（TabVault 专用，$6 一次性买断）
+# 2026-09-28 由用户从 Stripe 后台复制填入
+STRIPE_PAYMENT_LINK = "https://buy.stripe.com/9B6eVcbtBfOA9Tm2ltbwk01"
 
 # LIC_SECRET / STRIPE_SECRET_KEY 不要写在这里！用命令行注入：
 #   npx wrangler secret put LIC_SECRET
