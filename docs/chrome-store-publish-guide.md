@@ -14,11 +14,11 @@
 
 | 材料 | 规格（商店硬性要求） | 位置 |
 |------|---------------------|------|
-| 代码包 zip | manifest 合法、`description` ≤132 字符（当前 116） | `5b75f644/tabvault-extension-store.zip`（50,770 B，8 个源文件 + 3 个图标） |
+| 代码包 zip | manifest 合法、`description` ≤132 字符（当前 116） | `5b75f644/tabvault-extension-store.zip`（56,034 B，8 个源文件 + 3 个图标） |
 | 屏幕截图 | **必须 1280x800 或 640x400**，JPEG 或 24 位 PNG（无 alpha），1~5 张 | `5b75f644/tabvault-store-images/shot-1-pro.jpg` … `shot-4-paywall.jpg`（4 张，全 1280x800 / 24bpp） |
 | 小型宣传图块 | 440x280，可选但建议传 | `tabvault-store-images/tile-small.jpg` |
 | 顶部宣传图块 | 1400x560，可选 | `tabvault-store-images/tile-top.jpg` |
-| 图标 | 已在包内（16/48/128），表单无需单独上传 | — |
+| **商店图标（必填！）** | **正好 128x128 的 PNG**，≤1MB。⚠️ 包里的 `icons/` **不会**自动填这一格，「图片资源」屏要**单独上传一张**；传 1024 源图会报「错误：图片尺寸不正确」 | `5b75f644/tabvault-store-images/store-icon-128.png`（备用无 alpha 版：`store-icon-128-rgb.png`） |
 | 隐私政策 URL | 公开可访问、无登录墙 | `https://wd9337812.github.io/tabvault/PRIVACY.html`（需先开 Pages，见 §2） |
 | 支持页面 URL | 建议填 | `https://wd9337812.github.io/tabvault/SUPPORT.html` |
 
@@ -120,6 +120,7 @@ Support: https://wd9337812.github.io/tabvault/SUPPORT.html
 |---|---|
 | 类别 | **Productivity / 生产力** |
 | 语言 | **English**（界面已内置 en/zh 自动切换：英文浏览器出英文、中文浏览器出中文，设置抽屉里还能手动固定。可再点「添加语言」挂一份中文 listing 文案，不强制） |
+| **商店图标 \***（图片资源屏，**必填**） | 上传 `5b75f644\tabvault-store-images\store-icon-128.png`（正好 128x128 PNG）。⚠️ 代码包里的 `icons/icon-128.png` **不会**自动填这一格，必须单独传；若报「错误：图片尺寸不正确」= 传错文件（比如 `vibe_images/` 里那两张 1024x1024 源图），换上面这张即可；仍不行就用无 alpha 兜底版 `store-icon-128-rgb.png` |
 | 屏幕截图（1~5 张） | 顺序建议：`shot-1-pro.jpg` → `shot-2-pro.jpg` → `shot-3-pro.jpg` → `shot-4-paywall.jpg`（均为英文界面，与 English listing 一致） |
 | 小型宣传图块 | `tile-small.jpg`（440x280） |
 | 顶部宣传图块 | `tile-top.jpg`（1400x560） |
