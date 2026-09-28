@@ -35,13 +35,36 @@
       </div>
     </section>
 
+    <div id="crashBanner" class="crash hidden">
+      <span id="crashText"></span>
+      <div class="crash-row">
+        <button id="btnCrashRestore" class="mini-btn" data-i18n="crashRestore">Restore now</button>
+        <button id="btnCrashDismiss" class="link-btn" data-i18n="crashDismiss">Dismiss</button>
+      </div>
+    </div>
+
+    <section id="pasteBox" class="paste hidden">
+      <textarea id="pasteInput" rows="3" data-i18n-ph="pastePh"></textarea>
+      <div class="paste-row">
+        <button id="btnPasteOpen" class="mini-btn" data-i18n="pasteOpen">Open tabs</button>
+        <button id="btnPasteSave" class="mini-btn" data-i18n="pasteSave">Save as session</button>
+      </div>
+    </section>
+
     <main id="sessionList" class="task-list"></main>
 
     <footer class="foot">
       <span id="counter">0 / 5 sessions</span>
       <div class="foot-actions">
+        <select id="selExport" class="exp-select" title="Export format">
+          <option value="json" data-i18n="expJson">JSON file</option>
+          <option value="md" data-i18n="expMd">Markdown</option>
+          <option value="csv" data-i18n="expCsv">CSV</option>
+          <option value="copy" data-i18n="expCopy">Copy link text</option>
+        </select>
         <button id="btnExport" class="link-btn" data-i18n="export">Export</button>
         <button id="btnImport" class="link-btn" data-i18n="import">Import</button>
+        <button id="btnPaste" class="link-btn" data-i18n="pasteHead">Paste links</button>
       </div>
     </footer>
   </div>
@@ -139,7 +162,7 @@
       runtime: { sendMessage: () => Promise.resolve(), onMessage: { addListener: () => {} }, getURL: (p) => p },
       tabs: {
         query: async (q) => (q && q.currentWindow ? fakeTabs(6) : fakeTabs(3)),
-        create: async () => ({}), remove: async () => {},
+        create: async () => ({}), remove: async () => {}, update: async () => ({}),
       },
       windows: { create: async () => ({ id: 1 }), get: async () => ({ id: 1 }), remove: async () => {} },
       alarms: { create: () => {}, clear: () => {} },

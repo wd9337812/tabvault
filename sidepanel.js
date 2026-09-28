@@ -97,7 +97,7 @@ async function saveWindow({ andClose = false } = {}) {
     name: sessionName(tabs),
     createdAt: Date.now(),
     auto: false,
-    tabs: tabs.filter((x) => !seen.has(x.url) && seen.add(x.url)).map((x) => ({ title: x.title || x.url, url: x.url, fav: x.favIconUrl || "" })),
+    tabs: tabs.filter((x) => !seen.has(x.url) && seen.add(x.url)).map((x) => ({ title: x.title || x.url, url: x.url, fav: x.favIconUrl || "", pinned: !!x.pinned })),
   };
   state.sessions.unshift(session);
   await saveSessions();
@@ -111,10 +111,18 @@ async function saveWindow({ andClose = false } = {}) {
   }
 }
 
-async function restoreSession(id) {
+async function restoreSession(id, here = false) {
   const s = state.sessions.find((x) => x.id === id);
   if (!s) return;
-  await chrome.windows.create({ url: s.tabs.map((x) => x.url) });
+  if (here) {
+    for (const tb of s.tabs) await chrome.tabs.create({ url: tb.url, active: false, pinned: !!tb.pinned });
+  } else {
+    const win = await chrome.windows.create({ url: s.tabs.map((x) => x.url) });
+    const created = await chrome.tabs.query({ windowId: win.id });
+    created.forEach((tab, i) => {
+      if (s.tabs[i] && s.tabs[i].pinned && tab && tab.id != null) chrome.tabs.update(tab.id, { pinned: true });
+    });
+  }
   if (state.settings.delAfterRestore && !s.auto) {
     state.sessions = state.sessions.filter((x) => x.id !== id);
     await saveSessions();
@@ -174,11 +182,12 @@ function render() {
           <span class="sess-time">${timeAgo(s.createdAt)}</span>
         </div>
         <ul class="sess-tabs">${tabs.slice(0, 12).map((x) => `
-          <li><span class="fav">${x.fav ? `<img src="${esc(x.fav)}" alt="" loading="lazy" onerror="this.remove()">` : ""}</span><a href="${esc(x.url)}" target="_blank" rel="noopener" title="${esc(x.url)}">${hl(x.title)}</a></li>`).join("")}
+          <li><span class="fav">${x.fav ? `<img src="${esc(x.fav)}" alt="" loading="lazy">` : ""}</span><a href="${esc(x.url)}" target="_blank" rel="noopener" title="${esc(x.url)}">${hl(x.title)}</a>${x.pinned ? `<span class="pin" title="pinned">📌</span>` : ""}</li>`).join("")}
           ${tabs.length > 12 ? `<li><span class="fav" style="opacity:.3"></span><span style="color:var(--muted);font-size:12px">${esc(t("more", { n: tabs.length - 12 }))}</span></li>` : ""}
         </ul>
         <div class="sess-actions">
           <button class="restore-btn" data-act="restore">${esc(t("restoreAll"))}</button>
+          <button class="ghost-btn" data-act="restore-here">${esc(t("restoreHere"))}</button>
           <button class="ghost-btn" data-act="toggle">${q ? "" : esc(t("toggle"))}</button>
           ${s.auto ? "" : `<button class="ghost-btn del" data-act="del">${esc(t("del"))}</button>`}
         </div>
@@ -210,6 +219,7 @@ $("#sessionList").addEventListener("click", (e) => {
   const id = card.dataset.id;
   if (btn) {
     if (btn.dataset.act === "restore") return restoreSession(id);
+    if (btn.dataset.act === "restore-here") return restoreSession(id, true);
     if (btn.dataset.act === "del") return deleteSession(id);
     if (btn.dataset.act === "toggle") return card.classList.toggle("open");
   } else if (e.target.closest(".sess-name")) {
@@ -217,15 +227,45 @@ $("#sessionList").addEventListener("click", (e) => {
   }
 });
 
-// ---------- 导入 / 导出 ----------
-function exportAll() {
-  if (!caps().export) return upgradeNeeded(t("tExportPro"));
-  const blob = new Blob([JSON.stringify({ app: "tabvault", v: 1, sessions: state.sessions }, null, 2)], { type: "application/json" });
+// ---------- 导入 / 导出（json / md / csv / 复制纯文本） ----------
+function download(text, ext, mime) {
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `tabvault-${new Date().toISOString().slice(0, 10)}.json`;
+  a.href = URL.createObjectURL(new Blob([text], { type: mime }));
+  a.download = `tabvault-${new Date().toISOString().slice(0, 10)}.${ext}`;
   a.click();
   URL.revokeObjectURL(a.href);
+}
+function csvCell(s) { return '"' + String(s == null ? "" : s).replace(/"/g, '""') + '"'; }
+function exportAll() {
+  if (!caps().export) return upgradeNeeded(t("tExportPro"));
+  const fmt = $("#selExport").value;
+  if (fmt === "json") {
+    download(JSON.stringify({ app: "tabvault", v: 1, sessions: state.sessions }, null, 2), "json", "application/json");
+    return;
+  }
+  if (fmt === "md") {
+    const md = state.sessions.map((s) =>
+      `## ${s.name} · ${new Date(s.createdAt).toLocaleString()}\n\n` +
+      s.tabs.map((x) => `- [${x.title}](${x.url})`).join("\n")).join("\n\n");
+    return download(md, "md", "text/markdown");
+  }
+  if (fmt === "csv") {
+    const rows = [["session", "created", "tab_title", "tab_url"]];
+    state.sessions.forEach((s) => s.tabs.forEach((x) => rows.push([s.name, new Date(s.createdAt).toISOString(), x.title, x.url])));
+    return download(rows.map((r) => r.map(csvCell).join(",")).join("\r\n"), "csv", "text/csv");
+  }
+  const lines = state.sessions.flatMap((s) => s.tabs.map((x) => `${x.title} ${x.url}`));
+  const done = () => toast(t("tCopied", { n: lines.length }));
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(lines.join("\n")).then(done, done);
+  else {
+    const ta = document.createElement("textarea");
+    ta.value = lines.join("\n");
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    ta.remove();
+    done();
+  }
 }
 $("#btnImport").addEventListener("click", () => { if (!caps().export) return upgradeNeeded(t("tImportPro")); $("#fileImport").click(); });
 $("#fileImport").addEventListener("change", async (e) => {
@@ -242,6 +282,83 @@ $("#fileImport").addEventListener("change", async (e) => {
   } catch { toast(t("tBadFile")); }
   e.target.value = "";
 });
+
+// ---------- 崩溃/重启恢复横幅 ----------
+let crashTarget = null;
+async function checkCrashBanner() {
+  const hide = () => { crashTarget = null; $("#crashBanner").classList.add("hidden"); };
+  const d = await chrome.storage.local.get(["tv_startup_hint", "tv_crash_dismissed"]);
+  if (!d.tv_startup_hint) return hide();
+  const lastAuto = state.sessions.find((s) => s.auto);
+  if (!lastAuto || Date.now() - lastAuto.createdAt > 12 * 36e5) return hide();
+  if (d.tv_crash_dismissed === lastAuto.id) return hide();
+  crashTarget = lastAuto.id;
+  $("#crashText").innerHTML = t("crashBanner", { name: esc(lastAuto.name), n: lastAuto.tabs.length });
+  $("#crashBanner").classList.remove("hidden");
+}
+async function clearCrashHint() {
+  await chrome.storage.local.remove("tv_startup_hint");
+  $("#crashBanner").classList.add("hidden");
+  crashTarget = null;
+}
+
+// ---------- favicon 加载失败回落渐变色块（死链占位） ----------
+const FB_GRADS = [
+  "linear-gradient(135deg,#6d5efc,#b39dff)",
+  "linear-gradient(135deg,#f59e0b,#fcd34d)",
+  "linear-gradient(135deg,#10b981,#6ee7b7)",
+  "linear-gradient(135deg,#ef4444,#fca5a5)",
+  "linear-gradient(135deg,#3b82f6,#93c5fd)",
+];
+function gradFor(url) {
+  let h = 0;
+  const s = String(url || "");
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return FB_GRADS[h % FB_GRADS.length];
+}
+document.addEventListener("error", (e) => {
+  const img = e.target;
+  if (!img || img.tagName !== "IMG" || !img.closest || !img.closest(".fav")) return;
+  const sp = document.createElement("span");
+  sp.className = "fav-fb";
+  const li = img.closest("li");
+  const a = li && li.querySelector("a");
+  sp.style.background = gradFor(a ? a.href : "");
+  img.replaceWith(sp);
+}, true);
+
+// ---------- 粘贴链接批量开 / 存会话 ----------
+function parsePaste() {
+  return $("#pasteInput").value.split(/\r?\n/).map((l) => l.trim()).filter(Boolean).map((l) => {
+    if (/^https?:\/\//i.test(l)) return l;
+    if (/^[\w-]+(\.[\w-]+)+([/?#].*)?$/.test(l)) return "https://" + l;
+    return "https://www.google.com/search?q=" + encodeURIComponent(l);
+  });
+}
+async function pasteOpen() {
+  const urls = parsePaste();
+  if (!urls.length) return toast(t("tPasteNone"));
+  for (const u of urls) await chrome.tabs.create({ url: u, active: false });
+  $("#pasteInput").value = "";
+  toast(t("tOpened", { n: urls.length }));
+}
+async function pasteSave() {
+  const urls = parsePaste();
+  if (!urls.length) return toast(t("tPasteNone"));
+  if (!isPro() && manualCount() >= caps().maxManualSessions) {
+    return upgradeNeeded(t("tFreeLimit", { max: caps().maxManualSessions }));
+  }
+  const tabs = urls.map((u) => {
+    let title = u;
+    try { const uu = new URL(u); title = uu.hostname + (uu.pathname !== "/" ? uu.pathname : ""); } catch { /* keep url */ }
+    return { title: title.slice(0, 140), url: u, fav: "", pinned: false };
+  });
+  state.sessions.unshift({ id: uid(), name: sessionName(tabs), createdAt: Date.now(), auto: false, tabs });
+  await saveSessions();
+  render();
+  $("#pasteInput").value = "";
+  toast(t("tSaved", { n: tabs.length }));
+}
 
 // ---------- 抽屉 / 授权 ----------
 function openDrawer() { $("#drawer").classList.remove("hidden"); }
@@ -299,6 +416,17 @@ $("#selTheme").addEventListener("change", async (e) => {
 $("#btnSave").addEventListener("click", () => saveWindow());
 $("#btnSaveClose").addEventListener("click", () => saveWindow({ andClose: true }));
 $("#btnExport").addEventListener("click", exportAll);
+$("#btnPaste").addEventListener("click", () => $("#pasteBox").classList.toggle("hidden"));
+$("#btnPasteOpen").addEventListener("click", pasteOpen);
+$("#btnPasteSave").addEventListener("click", pasteSave);
+$("#btnCrashRestore").addEventListener("click", async () => {
+  if (crashTarget) await restoreSession(crashTarget);
+  await clearCrashHint();
+});
+$("#btnCrashDismiss").addEventListener("click", async () => {
+  if (crashTarget) await chrome.storage.local.set({ tv_crash_dismissed: crashTarget });
+  await clearCrashHint();
+});
 $("#searchBox").addEventListener("input", (e) => {
   if (!isPro() && e.target.value) { e.target.value = ""; state.query = ""; return upgradeNeeded(t("tSearchPro")); }
   state.query = e.target.value.trim();
@@ -380,6 +508,7 @@ async function seedDemo() {
   await load();
   if (demo) await seedDemo();
   render();
+  await checkCrashBanner();
   // 预览态默认展开前几张，截图里能看到标签列表
   if (demo) $$(".session").slice(0, 3).forEach((n) => n.classList.add("open"));
 })();

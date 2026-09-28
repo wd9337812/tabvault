@@ -90,14 +90,16 @@ ONE-CLICK WINDOW VAULTING
 Click the toolbar icon (or press Alt+Shift+S) and every page in the current window becomes one session, automatically named after the sites inside it. "Save & close" keeps the first tab and releases the rest, so you get your memory back without losing your place.
 
 RESTORE EXACTLY AS YOU LEFT IT
-Restoring opens a fresh window with your tabs in the original order. It never reorders or overwrites what you already have open.
+Restoring opens a fresh window with your tabs in the original order, pinned tabs pinned again — or drops them straight into the window you already have open. It never reorders or overwrites what you already have open.
 
 CRASH INSURANCE (PRO)
-Auto-backup quietly snapshots your active window every 15 minutes. Blue screen, accidental window close, "Chrome didn't respond" — restore the last snapshot instead of rebuilding a research thread from history.
+Auto-backup quietly snapshots your active window every 15 minutes. Blue screen, accidental window close, "Chrome didn't respond" — reopen the browser and a banner in the side panel offers the last snapshot in one click, instead of rebuilding a research thread from history.
 
 MADE FOR FOCUS
 • Side panel UI — sessions live beside your work, not in another tab
 • Search across every saved tab — find the page, not the session
+• Paste a pile of URLs or plain text — open them as tabs or vault them as a session
+• Toolbar badge shows how many tabs the current window is holding
 • Rename, delete, per-session tab counts
 • 100% local — sessions live in chrome.storage on your device; no account, no tracking
 
@@ -105,7 +107,7 @@ PRO (one-time $6 launch price, regular $9 — lifetime license, no subscription)
 • Unlimited sessions (free: 5 saved sessions)
 • Auto-backup every 15 minutes, rolling 20 snapshots
 • Search across all saved tabs
-• Export / import a JSON backup
+• Export / import a JSON backup, or export Markdown / CSV / plain text
 
 Privacy: all data is stored locally via chrome.storage. The extension itself runs no servers, no analytics and collects no personal data. Purchasing the optional Pro license is handled entirely on Stripe's hosted checkout.
 

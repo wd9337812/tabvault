@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TabVault — Tab Session Saver",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Save all open tabs as a session in one click, restore anytime. Auto-backup so a crash never loses your window again.",
   "author": "you",
   "permissions": ["storage", "tabs", "alarms", "sidePanel"],

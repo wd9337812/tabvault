@@ -26,7 +26,12 @@ chrome.runtime.onInstalled.addListener(() => {
     .catch((e) => console.warn("sidePanel behavior:", e));
   syncAlarm();
 });
-chrome.runtime.onStartup.addListener(syncAlarm);
+chrome.runtime.onStartup.addListener(() => {
+  // 崩溃/重启恢复横幅的触发标记（侧栏读它 + 最近自动快照决定是否提示）
+  chrome.storage.local.set({ tv_startup_hint: Date.now() }).catch(() => {});
+  syncAlarm();
+  updateTabBadge();
+});
 
 // ---------- 工具 ----------
 async function getLocal(keys) {
@@ -43,7 +48,7 @@ function tabSig(tabs) {
 
 async function snapshotActiveWindow() {
   const tabs = await chrome.tabs.query({ currentWindow: true });
-  return tabs.filter((t) => isSaveableUrl(t.url)).map((t) => ({ title: t.title || t.url, url: t.url, fav: t.favIconUrl || "" }));
+  return tabs.filter((t) => isSaveableUrl(t.url)).map((t) => ({ title: t.title || t.url, url: t.url, fav: t.favIconUrl || "", pinned: !!t.pinned }));
 }
 
 function sessionName(tabs) {
@@ -59,9 +64,25 @@ function sessionName(tabs) {
 async function updateBadge() {
   const { [STORE_SESSIONS]: list } = await getLocal([STORE_SESSIONS]);
   const n = (list || []).filter((s) => !s.auto).length;
-  chrome.action.setBadgeText({ text: n ? (n > 99 ? "99+" : String(n)) : "" });
-  chrome.action.setBadgeBackgroundColor({ color: "#6d5efc" });
+  await syncLang();
+  chrome.action.setTitle({ title: I18N.t("badgeTitle", { n }) });
 }
+
+// 工具栏角标 = 当前窗口活标签数（Session Buddy 式「压力表」）
+async function updateTabBadge() {
+  try {
+    const tabs = await chrome.tabs.query({ currentWindow: true });
+    const n = tabs.filter((t) => isSaveableUrl(t.url)).length;
+    chrome.action.setBadgeText({ text: n ? (n > 99 ? "99+" : String(n)) : "" });
+    chrome.action.setBadgeBackgroundColor({ color: "#8a8a93" });
+  } catch { /* 窗口切换瞬间可能查不到，忽略 */ }
+}
+chrome.tabs.onCreated.addListener(updateTabBadge);
+chrome.tabs.onRemoved.addListener(updateTabBadge);
+chrome.tabs.onUpdated.addListener(updateTabBadge);
+chrome.windows.onFocusChanged.addListener((w) => {
+  if (w !== chrome.windows.WINDOW_ID_NONE) updateTabBadge();
+});
 
 // ---------- 保存会话（快捷键 / 面板共用逻辑的核心） ----------
 async function saveCurrentWindow({ auto = false } = {}) {
@@ -119,3 +140,4 @@ chrome.commands.onCommand.addListener((cmd) => {
 });
 
 updateBadge();
+updateTabBadge();
