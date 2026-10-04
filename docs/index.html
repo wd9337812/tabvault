@@ -4,28 +4,28 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>TabVault — save a window of tabs, restore it in one click</title>
-<meta name="description" content="TabVault is a Chrome extension that saves all open tabs in a window as a session and restores them later. Auto-backup every 15 minutes. 100% local, no account.">
+<meta name="description" content="Save and restore HTTP/HTTPS tab sessions locally. Optional Pro backups cover normal windows every 15 minutes; up to 20 snapshots.">
 <link rel="icon" href="assets/icon-128.png">
 <link rel="canonical" href="https://wd9337812.github.io/tabvault/">
 <!-- social cards: every directory / Product Hunt / Reddit / Slack link preview reads these -->
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="TabVault">
 <meta property="og:title" content="TabVault — save a window of tabs, restore it in one click">
-<meta property="og:description" content="Tab session saver for Chrome. One click to save &amp; close a window, one click to restore it exactly — pinned tabs, order, URLs. Crash recovery and auto-backup included. 100% local, no account, $6 lifetime Pro.">
+<meta property="og:description" content="Save and restore HTTP/HTTPS tab sessions in Chrome. Preserves repeated URLs and pinned tabs. Optional Pro backups cover normal windows and retain up to 20 snapshots locally.">
 <meta property="og:url" content="https://wd9337812.github.io/tabvault/">
 <meta property="og:image" content="https://wd9337812.github.io/tabvault/assets/shot-1-pro.jpg">
 <meta property="og:image:width" content="1280">
 <meta property="og:image:height" content="800">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="TabVault — save a window of tabs, restore it in one click">
-<meta name="twitter:description" content="Tab session saver for Chrome: save &amp; close, restore exactly, crash recovery banner. All local. Free, $6 lifetime Pro.">
+<meta name="twitter:description" content="Save and restore tab sessions locally. Optional Pro backups cover normal windows; recover content from available snapshots.">
 <meta name="twitter:image" content="https://wd9337812.github.io/tabvault/assets/shot-1-pro.jpg">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"TabVault: Tab Session Saver",
  "applicationCategory":"BrowserApplication","operatingSystem":"Chrome",
  "url":"https://wd9337812.github.io/tabvault/",
  "image":"https://wd9337812.github.io/tabvault/assets/shot-1-pro.jpg",
- "description":"Chrome extension that saves all tabs in a window as a named session and restores them later, with auto-backup and crash recovery. Data stays local; no account required.",
+ "description":"Chrome extension that saves HTTP/HTTPS tabs as named sessions and restores them later. Optional Pro backups cover normal windows and help recover available snapshots. Sessions stay local.",
  "offers":{"@type":"Offer","price":"6.00","priceCurrency":"USD","description":"One-time Pro license (lifetime)"}}
 </script>
 <style>
@@ -108,10 +108,10 @@ footer a{color:#5b4bf0;text-decoration:none}
     <p class="sub">Turn it on once and forget about it.</p>
     <img class="shot" src="assets/shot-2-pro.jpg" alt="TabVault auto-backup every 15 minutes" style="margin-top:0">
     <div class="grid" style="margin-top:26px">
-      <div class="card"><h3>Every 15 minutes</h3><p>A snapshot of your active window is written to local storage. Blue screen, accidental
-        window close, “Chrome didn’t respond” — restore the last snapshot.</p></div>
-      <div class="card"><h3>Rolling 20 snapshots</h3><p>Old auto-backups trim themselves away, so the feature can’t quietly eat your disk.</p></div>
-      <div class="card"><h3>Off by default</h3><p>Nothing is snapshotted until you switch it on in the panel. It is the only part of TabVault that runs by itself.</p></div>
+      <div class="card"><h3>Every 15 minutes</h3><p>With Pro auto-backup enabled, snapshots of normal browser windows are written to local storage.
+        Restore from an available snapshot after an accidental close or restart; changes not yet saved may be missing.</p></div>
+      <div class="card"><h3>Rolling 20 snapshots</h3><p>Keep up to 20 automatic snapshots in total across windows. Manual sessions are never removed by automatic backup cleanup.</p></div>
+      <div class="card"><h3>Off by default</h3><p>Nothing is snapshotted until you switch it on in the panel. Local window caching and recovery activate with Pro auto-backup.</p></div>
     </div>
   </div>
 </section>
@@ -164,7 +164,7 @@ footer a{color:#5b4bf0;text-decoration:none}
     <p class="sub">TabVault has no user database. Sessions live in <code>chrome.storage.local</code> on your machine.</p>
     <div class="grid">
       <div class="card"><h3>No accounts, no tracking</h3><p>No sign-in, no analytics, no fingerprinting, no ad SDKs. Uninstalling deletes everything.</p></div>
-      <div class="card"><h3>Minimal permissions</h3><p><code>tabs</code> is only read when you save; browsing history is never touched. No <code>&lt;all_urls&gt;</code>, no content scripts.</p></div>
+      <div class="card"><h3>Minimal permissions</h3><p><code>tabs</code> reads titles and URLs when saving and, if enabled, for local automatic backup and recovery. Browsing history is never read. No <code>&lt;all_urls&gt;</code>, no content scripts.</p></div>
       <div class="card"><h3>Payments on Stripe</h3><p>Checkout happens on Stripe-hosted pages; card data never reaches us. The license key is verified locally.
         <a href="PRIVACY.html">Full policy</a></p></div>
     </div>
@@ -176,7 +176,7 @@ footer a{color:#5b4bf0;text-decoration:none}
     <h2>FAQ</h2>
     <div class="grid">
       <div class="card"><h3>Does it sync between computers?</h3><p>Not yet — by design, so nothing is uploaded. Pro users export a JSON file and import it on another machine.</p></div>
-      <div class="card"><h3>Why did some tabs not save?</h3><p>Chrome forbids extensions from reopening <code>chrome://</code> pages, the Web Store and other extensions’ pages, so those are skipped.</p></div>
+      <div class="card"><h3>Why did some tabs not save?</h3><p>TabVault saves HTTP/HTTPS webpages. Browser-internal pages such as <code>chrome://</code>, file URLs and extension pages are skipped.</p></div>
       <div class="card"><h3>Can I get a refund?</h3><p>Yes — within 14 days, no questions asked. <a href="SUPPORT.html">Support &amp; refunds</a></p></div>
     </div>
   </div>

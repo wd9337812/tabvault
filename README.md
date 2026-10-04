@@ -1,139 +1,30 @@
-# TabVault — 标签会话管理器（Chrome 扩展）
+# TabVault
 
-一键把整个窗口的标签存成「会话」，随时全部恢复；Pro 每 15 分钟自动备份，
-崩溃 / 误关窗口后再也不丢标签页。纯本地存储（`chrome.storage.local`）、零后端、
-零第三方 API，免费 + Pro 一次性买断（$6 起售价，划线锚定 $9），Pro 用 HMAC License Key 本地验签门控。
+Chrome 侧边栏扩展，当前版本 0.2.1；需要 Chrome 116 或更新版本。
 
-## 界面预览
+保存窗口中的 HTTP/HTTPS 标签并恢复到新窗口或当前窗口，保留重复网址和固定标签。免费版 5 个手动会话；Pro 增加跨会话搜索、导入导出和可选自动备份。自动备份默认关闭，开启后每 15 分钟备份普通窗口，保留最多 20 份自动快照（所有窗口合计），并维护本地窗口恢复缓存。恢复只能找回已有快照中的内容。
 
-| Pro（英文界面） | 付费墙 | Pro（中文界面） |
-|---|---|---|
-| ![pro](previews/en-pro.png) | ![paywall](previews/en-paywall.png) | ![zh](previews/zh-pro.png) |
+## 本地加载与测试
 
-> 本地预览：浏览器直接打开 `sidepanel.html?demo=pro`（或 `=free` / `=paywall`），
-> 加 `&lang=en` / `&lang=zh` 强制切换语言、`&theme=light` / `&theme=dark` 强制切换主题。
-> 页面内置开发桩，不影响真实扩展环境。
-> 界面语言默认跟随浏览器（`navigator.language`），主题默认跟随系统（`prefers-color-scheme`），
-> 两者都可在设置抽屉里手动固定；文案在 [`i18n.js`](i18n.js)、配色在
-> [`sidepanel.css`](sidepanel.css) 顶部的 token 表（浅色只覆盖 `:root[data-theme="light"]` 一段）。
+1. 在 chrome://extensions 开启开发者模式，加载本仓库目录。
+2. 工具栏点击扩展图标打开侧栏。
+3. 回归测试：node tools/regression.mjs。 签名兼容测试：node tools/selftest.mjs。
+4. UI 预览仅用于浏览器直接打开 sidepanel.html?demo=pro；真实扩展会忽略 demo 参数。
 
----
+## 存储与迁移
 
-## 1. 本地加载（先看效果）
+界面发送具体操作；service worker 串行读取最新数据并持久保存，所有侧栏监听存储变化。旧数据键保留。异常旧记录修改前会保留在 tv_recovery_backup_v1，导入则必须完整通过校验。不要卸载扩展来更新，以免删除已有数据。
 
-1. Chrome 地址栏输入 `chrome://extensions`
-2. 右上角打开 **开发者模式**
-3. 点 **加载已解压的扩展程序** → 选择本 `tab-vault/` 目录
-4. 点工具栏图标 → 侧边栏打开 → 点 **「＋ 保存当前窗口」**
-5. 快捷键 `Alt+Shift+S` 同样保存当前窗口
-6. 侧边栏底部 **「粘贴」** 可把一坨 URL / 纯文本批量开成标签或存为新会话；
-   浏览器崩溃 / 误关窗口后重开，侧边栏顶部会出现恢复横幅一键找回
+## 发布与付款服务
 
----
+- 扩展 ZIP 只包含 manifest、运行脚本、样式、页面和图标。manifest.json 放在 ZIP 根目录。
+- config.js 在公开仓库中保持占位密钥；发布包注入与现有线上服务一致的原密钥，避免老 Key 失效。不要把真实密钥提交到 GitHub。
+- Worker 部署：在 worker 目录执行 wrangler deploy --keep-vars，保留现有 LIC_SECRET 和 STRIPE_SECRET_KEY。
+- Worker 将 paid、complete、payment 模式的正式 Session 与 STRIPE_PAYMENT_LINK 对应的实际 Payment Link 核对后才签发。测试环境如需测试订单，单独配置 ALLOW_TEST_PAYMENTS=true；生产默认拒绝。
+- 当前仍为客户端 HMAC，能读取安装包的技术用户可以取得签名密钥；设备限制和退款撤销并未实现。更强的许可方案应另行迁移到服务端私钥签发或授权记录。
 
-## 2. 免费 / Pro 门控
+## 隐私
 
-| 能力 | 免费 | Pro |
-|------|:---:|:---:|
-| 手动保存会话、恢复全部、存后关闭 | ✅ | ✅ |
-| 会话重命名 / 删除、标签数徽标 | ✅ | ✅ |
-| 手动会话数量上限 | 5 | 无限 |
-| 每 15 分钟自动备份（崩溃保险） | 🔒 | ✅ |
-| 自动备份保留份数 | — | 20 |
-| 跨会话搜索所有标签 | 🔒 | ✅ |
-| 导出 / 导入 JSON 备份 | 🔒 | ✅ |
-| 导出 Markdown / CSV / 复制纯文本 | 🔒 | ✅ |
-| 崩溃 / 误关后启动恢复横幅（一键找回最近自动备份） | ✅ | ✅ |
-| 恢复到新窗口 / 当前窗口、保留 pinned 标签 | ✅ | ✅ |
-| 粘贴 URL / 文本 → 批量开标签或存为会话 | ✅ | ✅ |
-| 工具栏角标：当前窗口标签数「压力表」 | ✅ | ✅ |
-| 界面语言（English / 中文，跟随浏览器 + 可手动固定） | ✅ | ✅ |
-| 浅色 / 深色主题（跟随系统 + 可手动固定）、真实站点 favicon | ✅ | ✅ |
+会话、快照和窗口缓存仅存本机；主动开启备份后会监听标签变化用于本地恢复。显示图标会直接请求对应站点的同源图标，不通过开发者服务。 购买页由 Stripe 处理；开发者不接收使用遥测。完整隐私政策见 docs/PRIVACY.html。
 
-### 怎么调免费额度（改一个文件即生效）
-
-打开 [`config.js`](config.js)，改 `FREE` 里的数字，保存后到
-`chrome://extensions` 点本扩展的 **重新加载 ⟳** 即生效：
-
-```js
-FREE: {
-  maxManualSessions: 5,   // ← 免费手动会话上限，改成 3 / 10 随意
-  auto: false,            // ← 自动备份是否免费（建议保持 false，这是最强卖点）
-  search: false,          // ← 跨会话搜索是否免费
-  export: false,          // ← 导出备份是否免费
-  keepAutoBackups: 1      // ← 免费版自动备份保留份数
-},
-AUTO_INTERVAL_MIN: 15     // ← 自动备份间隔（分钟），改成 10 更激进
-```
-
-调参建议：免费 5 个会话是「轻度用户一周够用、多窗口党当天撞墙」的位置。
-上线一周后看反馈收紧或放宽；改完记得同步商店描述里的 Free/Pro 对比。
-
----
-
-## 3. 文件结构
-
-```
-tab-vault/
-├── manifest.json      # MV3；权限只有 storage / tabs / alarms / sidePanel（无 host_permissions，审核最快）
-├── background.js      # service worker：自动备份 alarm、快捷键、徽标计数
-├── config.js          # ★ 唯一调参点：SECRET / 收款链接 / FREE / PRO 门控
-├── i18n.js            # en / zh 文案字典 + 自动按浏览器语言切换
-├── license.js         # HMAC-SHA256 验签（纯本地）
-├── sidepanel.{html,css,js}   # 主 UI，含 ?demo= 预览桩
-├── worker/            # Cloudflare Worker：/buy 跳转 Stripe、/success 验支付后签发 key
-├── tools/keygen.mjs   # 手动 / 批量补发 key（客服用）
-├── tools/selftest.mjs # 三端签名一致性自检
-├── docs/              # 落地页 + 隐私政策 + 支持页 + CWS 逐屏上架指南（GitHub Pages 从 /docs 发布）
-└── setup.mjs          # 交互式部署向导
-```
-
-商店素材（已生成，不在 git 里）：
-- 代码包 `../tabvault-extension-store.zip`（含真实 SECRET，只上传商店，绝不进公开仓库）
-- 截图 `../tabvault-store-images/`：4 张 1280x800 + tile-small 440x280 + tile-top 1400x560
-- 重新打包：`powershell -File dev\repack-store.ps1`
-
-隐私说明：所有数据只写在本机 `chrome.storage.local`，扩展不向我们的任何服务器发送数据
-（除用户主动点「购买」打开收款页）。会话卡片会加载保存时记录的站点 favicon——直接向该站点
-自身域名请求，与浏览器画标签图标相同，不经过第三方中转。`tabs` 权限用于读取标签标题、URL
-与 favicon 地址以保存会话。
-
----
-
-## 4. 部署收款（首次上线，按顺序做）
-
-> 点击级完整清单（含测试验收、切 live、GitHub/Pages、CWS 提审与故障速查）：
-> [docs/launch-checklist.md](docs/launch-checklist.md)。本节为速览。
-
-```bash
-cd tab-vault
-node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"   # 换新 SECRET，同步到 config.js
-node tools/selftest.mjs        # 必须 6/6 PASS 再继续
-cd worker && npx wrangler deploy
-npx wrangler secret put LIC_SECRET          # 填 config.js 里那个 SECRET
-npx wrangler secret put STRIPE_SECRET_KEY   # Stripe sk_live_...
-cd .. && node setup.mjs                     # 向导：登录、部署、回填收款链接
-```
-
-Stripe 侧只需两次点击（API 改不了）：
-1. 建一个 **$6 一次性** Payment Link，链接填进 `worker/wrangler.toml` 的 `STRIPE_PAYMENT_LINK`；
-   实收 $6，界面上的 `$9` 只是划线锚定价（文案在 `i18n.js` 的 `priceNow` / `priceWas`）；
-2. 该链接的 **After completion → Redirect to URL** 设为
-   `https://tabvault-pro-api.wd933781.workers.dev/success?sid={CHECKOUT_SESSION_ID}`。
-
-补发 key（客服 / 手动发货）：
-
-```bash
-node tools/keygen.mjs --email buyer@example.com --days 3650
-```
-
----
-
-## 5. 安全红线
-
-- 真实 `SECRET` 永不进公开仓库：本仓库已对 `config.js` 执行
-  `git update-index --skip-worktree config.js`，克隆后请自行填入。
-- 上传商店的 zip **必然包含** 客户端 `SECRET`（纯客户端验签的固有取舍），
-  因此公开代码仓库里的 `config.js` 必须是占位值。
-- 客户端验签挡不住读源码的技术用户。付费用户变多后，把 `license.js` 换成
-  调用 Worker 的 `/verify` 接口即可（Worker 已具备签发能力）。
+修复列表见 CHANGELOG.md。

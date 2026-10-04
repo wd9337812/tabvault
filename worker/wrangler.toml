@@ -9,6 +9,7 @@ main = "index.js"
 compatibility_date = "2026-09-01"
 
 [vars]
+ALLOW_TEST_PAYMENTS = "false"
 # 你的 Stripe Payment Link（TabVault 专用，$6 一次性买断）
 # 2026-09-28 由用户从 Stripe 后台复制填入
 STRIPE_PAYMENT_LINK = "https://buy.stripe.com/9B6eVcbtBfOA9Tm2ltbwk01"

@@ -1,10 +1,15 @@
 {
   "manifest_version": 3,
   "name": "TabVault — Tab Session Saver",
-  "version": "0.2.0",
-  "description": "Save all open tabs as a session in one click, restore anytime. Auto-backup so a crash never loses your window again.",
+  "version": "0.2.1",
+  "description": "Save browser tabs as sessions and restore them later. Optional Pro backups keep up to 20 snapshots across normal windows.",
   "author": "you",
-  "permissions": ["storage", "tabs", "alarms", "sidePanel"],
+  "permissions": [
+    "storage",
+    "tabs",
+    "alarms",
+    "sidePanel"
+  ],
   "action": {
     "default_title": "Open TabVault sidebar",
     "default_icon": {
@@ -26,8 +31,11 @@
   },
   "commands": {
     "save-session": {
-      "suggested_key": { "default": "Alt+Shift+S" },
+      "suggested_key": {
+        "default": "Alt+Shift+S"
+      },
       "description": "Save the current window as a session"
     }
-  }
+  },
+  "minimum_chrome_version": "116"
 }

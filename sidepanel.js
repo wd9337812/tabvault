@@ -9,6 +9,7 @@ const STORE_SESSIONS = "tv_sessions";
 const STORE_SETTINGS = "tv_settings";
 const STORE_LICENSE = "tv_license";
 
+let panelWindowId;
 const state = {
   sessions: [],
   settings: { autoOn: false, intervalMin: CONFIG.AUTO_INTERVAL_MIN, delAfterRestore: false, plan: "free", langPref: "auto", themePref: "auto" },
@@ -20,7 +21,7 @@ const t = (k, v) => I18N.t(k, v);
 
 // ---------- 基础工具 ----------
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
-function esc(s) { return (s || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 function timeAgo(ts) {
   const d = Date.now() - ts;
   if (d < 6e4) return t("justNow");
@@ -40,31 +41,22 @@ function resolveTheme() { return themePref() === "auto" ? (MQ_LIGHT.matches ? "l
 function applyTheme() { document.documentElement.dataset.theme = resolveTheme(); }
 MQ_LIGHT.addEventListener("change", () => { if (themePref() === "auto") applyTheme(); });
 
-async function load() {
-  const d = await chrome.storage.local.get([STORE_SESSIONS, STORE_SETTINGS, STORE_LICENSE]);
-  state.sessions = d[STORE_SESSIONS] || [];
-  Object.assign(state.settings, d[STORE_SETTINGS] || {});
-  if (d[STORE_LICENSE] && d[STORE_LICENSE].key) {
-    const v = await Lic.verify(d[STORE_LICENSE].key, CONFIG.SECRET);
-    state.plan = v.ok ? (v.plan || "pro") : "free";
-    if (!v.ok) await chrome.storage.local.remove(STORE_LICENSE);
-  }
-  state.settings.plan = state.plan;
-  // 语言：?lang= 只用于截图/调试，不写回存储
-  const forced = (location.search.match(/lang=(\w+)/) || [])[1];
-  I18N.setPref(forced || state.settings.langPref || "auto");
-  state.settings.langPref = forced || state.settings.langPref || "auto";
-  state.settings.langResolved = I18N.lang();          // service worker 命名自动备份用
-  document.documentElement.lang = state.settings.langResolved;
-  // 主题：?theme= 只用于截图/调试，不写回存储
-  const forcedTheme = (location.search.match(/theme=(light|dark)/) || [])[1];
-  if (forcedTheme) document.documentElement.dataset.theme = forcedTheme;
-  else applyTheme();
-  await chrome.storage.local.set({ [STORE_SETTINGS]: state.settings });
+
+function applyState(next) { if(next) { state.sessions=next.sessions; state.settings=next.settings; state.plan=next.plan; } }
+async function rpc(op,payload={}) {
+  if(globalThis.__previewMode) { toast(t('tPreview')); return null; }
+  try {
+    const r=await chrome.runtime.sendMessage({type:'TV_OP',op,payload});
+    if(!r?.ok) { if(r?.code==='limit'||r?.code==='pro') upgradeNeeded(r.message); else toast(r?.message||t('tSaveFailed')); return null; }
+    applyState(r.state); render(); return r;
+  } catch { toast(t('tSaveFailed')); return null; }
 }
-async function saveSessions() {
-  await chrome.storage.local.set({ [STORE_SESSIONS]: state.sessions });
-  chrome.runtime.sendMessage({ type: "SETTINGS_CHANGED" }).catch(() => {}); // 让角标/备份同步
+async function load() {
+  if(globalThis.__previewMode) return;
+  const r=await chrome.runtime.sendMessage({type:'TV_OP',op:'READ'});
+  if(!r?.ok) throw new Error(r?.message||t('tSaveFailed'));
+  applyState(r.state);
+  I18N.setPref(state.settings.langPref); document.documentElement.lang=I18N.lang(); applyTheme();
 }
 
 // ---------- 门控 ----------
@@ -85,66 +77,21 @@ function sessionName(tabs) {
   return `${head || t("windowWord")}${hosts.length > 3 ? ` +${hosts.length - 3}` : ""} ${t("tabsSuffix", { n: tabs.length })}`;
 }
 
-async function saveWindow({ andClose = false } = {}) {
-  const tabs = await currentWindowTabs();
-  if (!tabs.length) return toast(t("tNoTabs"));
-  if (!isPro() && manualCount() >= caps().maxManualSessions) {
-    return upgradeNeeded(t("tFreeLimit", { max: caps().maxManualSessions }));
-  }
-  const seen = new Set();
-  const session = {
-    id: uid(),
-    name: sessionName(tabs),
-    createdAt: Date.now(),
-    auto: false,
-    tabs: tabs.filter((x) => !seen.has(x.url) && seen.add(x.url)).map((x) => ({ title: x.title || x.url, url: x.url, fav: x.favIconUrl || "", pinned: !!x.pinned })),
-  };
-  state.sessions.unshift(session);
-  await saveSessions();
-  render();
-  toast(t("tSaved", { n: session.tabs.length }));
-  if (andClose) {
-    const keep = new Set([tabs[0].id]);
-    await chrome.tabs.remove(tabs.filter((x) => !keep.has(x.id)).map((x) => x.id)).catch(() => {});
-    toast(t("tSavedClosed", { n: tabs.length - 1 }));
-    render();
-  }
-}
 
-async function restoreSession(id, here = false) {
-  const s = state.sessions.find((x) => x.id === id);
-  if (!s) return;
-  if (here) {
-    for (const tb of s.tabs) await chrome.tabs.create({ url: tb.url, active: false, pinned: !!tb.pinned });
-  } else {
-    const win = await chrome.windows.create({ url: s.tabs.map((x) => x.url) });
-    const created = await chrome.tabs.query({ windowId: win.id });
-    created.forEach((tab, i) => {
-      if (s.tabs[i] && s.tabs[i].pinned && tab && tab.id != null) chrome.tabs.update(tab.id, { pinned: true });
-    });
-  }
-  if (state.settings.delAfterRestore && !s.auto) {
-    state.sessions = state.sessions.filter((x) => x.id !== id);
-    await saveSessions();
-  }
-  render();
-  toast(t("tRestored", { n: s.tabs.length }));
+async function saveWindow({andClose=false}={}) {
+  const r=await rpc('SAVE_WINDOW',{windowId:panelWindowId,andClose});
+  if(r) toast(t(andClose?'tSavedClosed':'tSaved',{n:andClose?r.session.tabs.length-1:r.session.tabs.length}));
 }
-
+async function restoreSession(id,here=false) {
+  const r=await rpc('RESTORE',{id,here,windowId:panelWindowId});
+  if(r) toast(t('tRestored',{n:r.restored})); return !!r;
+}
 async function deleteSession(id) {
-  const s = state.sessions.find((x) => x.id === id);
-  if (!s) return;
-  if (!confirm(t("tDelConfirm", { name: s.name }))) return;
-  state.sessions = state.sessions.filter((x) => x.id !== id);
-  await saveSessions();
-  render();
+  const s=state.sessions.find(x=>x.id===id); if(s&&confirm(t('tDelConfirm',{name:s.name}))) await rpc('DELETE',{id});
 }
-
 async function renameSession(id) {
-  const s = state.sessions.find((x) => x.id === id);
-  if (!s || s.auto) return;
-  const name = prompt(t("tRenamePrompt"), s.name);
-  if (name && name.trim()) { s.name = name.trim().slice(0, 80); await saveSessions(); render(); }
+  const s=state.sessions.find(x=>x.id===id); if(!s||s.auto) return;
+  const name=prompt(t('tRenamePrompt'),s.name); if(name?.trim()) await rpc('RENAME',{id,name});
 }
 
 // ---------- 渲染 ----------
@@ -174,16 +121,16 @@ function render() {
     el.innerHTML = `<div class="empty"><div class="empty-ico">${q ? "🔍" : "🗂"}</div>${q ? t("emptySearch") : t("empty")}</div>`;
   } else {
     el.innerHTML = list.map(({ s, tabs }) => `
-      <div class="session ${s.auto ? "auto" : ""}" data-id="${s.id}">
+      <div class="session ${s.auto ? "auto" : ""}" data-id="${esc(s.id)}">
         <div class="sess-head">
           <span class="sess-name" title="${esc(t("renameTip"))}">${hl(s.name)}</span>
           ${s.auto ? `<span class="badge-auto">${esc(t("auto"))}</span>` : ""}
           <span class="sess-count">${s.tabs.length}</span>
           <span class="sess-time">${timeAgo(s.createdAt)}</span>
         </div>
-        <ul class="sess-tabs">${tabs.slice(0, 12).map((x) => `
+        <ul class="sess-tabs">${tabs.map((x) => `
           <li><span class="fav">${x.fav ? `<img src="${esc(x.fav)}" alt="" loading="lazy">` : ""}</span><a href="${esc(x.url)}" target="_blank" rel="noopener" title="${esc(x.url)}">${hl(x.title)}</a>${x.pinned ? `<span class="pin" title="pinned">📌</span>` : ""}</li>`).join("")}
-          ${tabs.length > 12 ? `<li><span class="fav" style="opacity:.3"></span><span style="color:var(--muted);font-size:12px">${esc(t("more", { n: tabs.length - 12 }))}</span></li>` : ""}
+
         </ul>
         <div class="sess-actions">
           <button class="restore-btn" data-act="restore">${esc(t("restoreAll"))}</button>
@@ -256,15 +203,13 @@ function exportAll() {
   }
   const lines = state.sessions.flatMap((s) => s.tabs.map((x) => `${x.title} ${x.url}`));
   const done = () => toast(t("tCopied", { n: lines.length }));
-  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(lines.join("\n")).then(done, done);
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(lines.join("\n")).then(done, () => toast(t('tCopyFailed')));
   else {
     const ta = document.createElement("textarea");
     ta.value = lines.join("\n");
     document.body.appendChild(ta);
     ta.select();
-    document.execCommand("copy");
-    ta.remove();
-    done();
+    const copied=document.execCommand('copy'); ta.remove(); if(copied) done(); else toast(t('tCopyFailed'));
   }
 }
 $("#btnImport").addEventListener("click", () => { if (!caps().export) return upgradeNeeded(t("tImportPro")); $("#fileImport").click(); });
@@ -272,14 +217,11 @@ $("#fileImport").addEventListener("change", async (e) => {
   const f = e.target.files[0];
   if (!f) return;
   try {
-    const data = JSON.parse(await f.text());
-    if (!Array.isArray(data.sessions)) throw 0;
-    const have = new Set(state.sessions.map((s) => s.id));
-    state.sessions = [...data.sessions.filter((s) => !have.has(s.id)), ...state.sessions].sort((a, b) => b.createdAt - a.createdAt);
-    await saveSessions();
-    render();
-    toast(t("tImported", { n: data.sessions.length }));
-  } catch { toast(t("tBadFile")); }
+
+    if(f.size>10*1024*1024) throw new Error('File too large');
+    const data=JSON.parse(await f.text());
+    const r=await rpc('IMPORT',{data}); if(r) toast(t('tImported',{n:r.imported}));
+  } catch { toast(t('tBadFile')); }
   e.target.value = "";
 });
 
@@ -289,9 +231,12 @@ async function checkCrashBanner() {
   const hide = () => { crashTarget = null; $("#crashBanner").classList.add("hidden"); };
   const d = await chrome.storage.local.get(["tv_startup_hint", "tv_crash_dismissed"]);
   if (!d.tv_startup_hint) return hide();
-  const lastAuto = state.sessions.find((s) => s.auto);
-  if (!lastAuto || Date.now() - lastAuto.createdAt > 12 * 36e5) return hide();
-  if (d.tv_crash_dismissed === lastAuto.id) return hide();
+
+  const hint=d.tv_startup_hint;
+  const at=typeof hint==='number'?hint:hint.at;
+  const lastAuto=hint.target?state.sessions.find(s=>s.id===hint.target):state.sessions.find(s=>s.auto&&s.createdAt<=at);
+  if(!lastAuto) return hide();
+  if(d.tv_crash_dismissed===lastAuto.id) return hide();
   crashTarget = lastAuto.id;
   $("#crashText").innerHTML = t("crashBanner", { name: esc(lastAuto.name), n: lastAuto.tabs.length });
   $("#crashBanner").classList.remove("hidden");
@@ -353,11 +298,9 @@ async function pasteSave() {
     try { const uu = new URL(u); title = uu.hostname + (uu.pathname !== "/" ? uu.pathname : ""); } catch { /* keep url */ }
     return { title: title.slice(0, 140), url: u, fav: "", pinned: false };
   });
-  state.sessions.unshift({ id: uid(), name: sessionName(tabs), createdAt: Date.now(), auto: false, tabs });
-  await saveSessions();
-  render();
-  $("#pasteInput").value = "";
-  toast(t("tSaved", { n: tabs.length }));
+
+  const r=await rpc('PASTE',{tabs});
+  if(r) { $('#pasteInput').value=''; toast(t('tSaved',{n:tabs.length})); }
 }
 
 // ---------- 抽屉 / 授权 ----------
@@ -365,52 +308,27 @@ function openDrawer() { $("#drawer").classList.remove("hidden"); }
 $("#btnUpgrade").addEventListener("click", openDrawer);
 $("#btnCloseDrawer").addEventListener("click", () => $("#drawer").classList.add("hidden"));
 
-$("#btnActivate").addEventListener("click", async () => {
-  const key = $("#licenseInput").value.trim();
-  if (!key) return licStatus(t("licPasteFirst"), false);
-  const v = await Lic.verify(key, CONFIG.SECRET);
-  if (!v.ok) return licStatus(t("licInvalid"), false);
-  await chrome.storage.local.set({ [STORE_LICENSE]: { key, plan: v.plan, label: v.label, exp: v.exp } });
-  licStatus(t("licActivated", { label: v.label || v.plan }), true);
-  await load();
-  render();
+
+$('#btnActivate').addEventListener('click',async()=>{
+  const key=$('#licenseInput').value.trim(); if(!key) return licStatus(t('licPasteFirst'),false);
+  if(await rpc('LICENSE_SET',{key})) licStatus(t('licActivated',{label:'Pro'}),true);
 });
-$("#btnDeactivate").addEventListener("click", async () => {
-  await chrome.storage.local.remove(STORE_LICENSE);
-  licStatus(t("licDeactivated"), true);
-  await load();
-  render();
-});
+$('#btnDeactivate').addEventListener('click',async()=>{ if(await rpc('LICENSE_RELEASE')) licStatus(t('licDeactivated'),true); });
 function licStatus(text, ok) {
   const el = $("#licStatus");
   el.textContent = text;
   el.className = "lic-status " + (ok ? "ok" : "err");
 }
 
-$("#chkAuto").addEventListener("change", async (e) => {
-  if (!isPro()) { e.target.checked = false; return upgradeNeeded(t("tAutoPro")); }
-  state.settings.autoOn = e.target.checked;
-  await chrome.storage.local.set({ [STORE_SETTINGS]: state.settings });
-  chrome.runtime.sendMessage({ type: "SETTINGS_CHANGED" }).catch(() => {});
-  toast(e.target.checked ? t("tAutoOn", { n: intervalMin() }) : t("tAutoOff"));
+
+$('#chkAuto').addEventListener('change',async e=>{
+  const enabled=e.target.checked;
+  const r=await rpc('SETTINGS',{autoOn:enabled});
+  if(r) toast(t(enabled?'tAutoOn':'tAutoOff',{n:intervalMin()})); else render();
 });
-$("#chkDelAfterRestore").addEventListener("change", async (e) => {
-  state.settings.delAfterRestore = e.target.checked;
-  await chrome.storage.local.set({ [STORE_SETTINGS]: state.settings });
-});
-$("#selLang").addEventListener("change", async (e) => {
-  state.settings.langPref = e.target.value;
-  state.settings.langResolved = (I18N.setPref(e.target.value), I18N.lang());
-  document.documentElement.lang = state.settings.langResolved;
-  await chrome.storage.local.set({ [STORE_SETTINGS]: state.settings });
-  chrome.runtime.sendMessage({ type: "SETTINGS_CHANGED" }).catch(() => {});
-  render();
-});
-$("#selTheme").addEventListener("change", async (e) => {
-  state.settings.themePref = e.target.value;
-  applyTheme();
-  await chrome.storage.local.set({ [STORE_SETTINGS]: state.settings });
-});
+$('#chkDelAfterRestore').addEventListener('change',e=>rpc('SETTINGS',{delAfterRestore:e.target.checked}));
+$('#selLang').addEventListener('change',async e=>{ if(await rpc('SETTINGS',{langPref:e.target.value})) { I18N.setPref(state.settings.langPref); document.documentElement.lang=I18N.lang(); render(); } });
+$('#selTheme').addEventListener('change',async e=>{ if(await rpc('SETTINGS',{themePref:e.target.value})) applyTheme(); });
 
 // ---------- 事件绑定 ----------
 $("#btnSave").addEventListener("click", () => saveWindow());
@@ -420,8 +338,7 @@ $("#btnPaste").addEventListener("click", () => $("#pasteBox").classList.toggle("
 $("#btnPasteOpen").addEventListener("click", pasteOpen);
 $("#btnPasteSave").addEventListener("click", pasteSave);
 $("#btnCrashRestore").addEventListener("click", async () => {
-  if (crashTarget) await restoreSession(crashTarget);
-  await clearCrashHint();
+  if (crashTarget && await restoreSession(crashTarget)) await clearCrashHint();
 });
 $("#btnCrashDismiss").addEventListener("click", async () => {
   if (crashTarget) await chrome.storage.local.set({ tv_crash_dismissed: crashTarget });
@@ -432,12 +349,13 @@ $("#searchBox").addEventListener("input", (e) => {
   state.query = e.target.value.trim();
   render();
 });
-chrome.runtime.onMessage.addListener((msg) => {
-  if (msg && (msg.type === "SESSIONS_CHANGED" || msg.type === "SETTINGS_CHANGED")) load().then(render);
+
+chrome.storage.onChanged.addListener((changes,area)=>{
+  if(area==='local'&&(changes.tv_sessions||changes.tv_settings||changes.tv_license||changes.tv_startup_hint)) load().then(()=>{render();return checkCrashBanner();}).catch(()=>toast(t('tSaveFailed')));
 });
 
 // ---------- 预览演示数据（仅 ?demo= 生效，不影响正常使用） ----------
-const demo = (location.search.match(/demo=(\w+)/) || [])[1];
+const demo = globalThis.__previewMode && (location.search.match(/demo=(\w+)/) || [])[1];
 const DEMO_POOL_EN = [
   ["Notion — Q4 roadmap draft", "https://notion.so/wd/q4-roadmap"],
   ["Figma — Session card UI v3", "https://figma.com/file/session-card-ui"],
@@ -505,10 +423,12 @@ async function seedDemo() {
 }
 
 (async function init() {
+  if(!globalThis.__previewMode) panelWindowId=(await chrome.windows.getCurrent()).id;
   await load();
+  if(globalThis.__previewMode) { const params=new URLSearchParams(location.search); I18N.setPref(params.get('lang')||'auto'); state.settings.themePref=params.get('theme')||'auto'; applyTheme(); }
   if (demo) await seedDemo();
   render();
   await checkCrashBanner();
   // 预览态默认展开前几张，截图里能看到标签列表
   if (demo) $$(".session").slice(0, 3).forEach((n) => n.classList.add("open"));
-})();
+})().catch(e=>toast(e.message||t('tSaveFailed')));

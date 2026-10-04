@@ -12,6 +12,9 @@
 const I18N = (() => {
   const dict = {
     en: {
+      tSaveFailed: 'Could not save. Check local storage space and retry.',
+      tCopyFailed: 'Copy failed. Please try again.',
+      tPreview: 'Preview mode does not save data.',
       // top bar / capture
       save: "Save current window",
       saveTitle: "Save every tab in this window as a session (Alt+Shift+S)",
@@ -56,7 +59,7 @@ const I18N = (() => {
       tAutoOn: "Auto-backup every {n} min",
       tAutoOff: "Auto-backup turned off",
       // crash recovery banner
-      crashBanner: "Auto-backup from before the browser closed: <b>{name}</b> ({n} tabs).",
+      crashBanner: "Available recovery snapshot: <b>{name}</b> ({n} tabs).",
       crashRestore: "Restore now",
       crashDismiss: "Dismiss",
       // restore routes / export formats
@@ -96,7 +99,7 @@ const I18N = (() => {
       activate: "Activate",
       deactivate: "Release device",
       autoHead: "Auto-backup",
-      autoRowA: "Vault this window every",
+      autoRowA: "Back up normal windows every",
       autoRowB: "min (Pro)",
       delAfterRow: "Delete a session once it has been restored",
       langHead: "Language 语言",
@@ -108,6 +111,9 @@ const I18N = (() => {
       note: "All sessions stay in this browser (chrome.storage). Nothing is uploaded.",
     },
     zh: {
+      tSaveFailed: '保存失败，请检查本地存储空间后重试。',
+      tCopyFailed: '复制失败，请重试。',
+      tPreview: '预览模式不保存数据。',
       save: "保存当前窗口",
       saveTitle: "把当前窗口所有标签保存为会话 (Alt+Shift+S)",
       saveClose: "存后关闭",
@@ -147,7 +153,7 @@ const I18N = (() => {
       tSearchPro: "跨会话搜索属于 Pro",
       tAutoOn: "每 {n} 分钟自动备份当前窗口",
       tAutoOff: "自动备份已关闭",
-      crashBanner: "浏览器关闭前的自动备份：<b>{name}</b>（{n} 个标签）。",
+      crashBanner: "可恢复的自动快照：<b>{name}</b>（{n} 个标签）。",
       crashRestore: "立即恢复",
       crashDismiss: "忽略",
       restoreHere: "恢复到当前窗口",
@@ -184,7 +190,7 @@ const I18N = (() => {
       deactivate: "解除本设备",
       autoHead: "自动备份",
       autoRowA: "开启后每",
-      autoRowB: "分钟备份当前窗口（Pro）",
+      autoRowB: "分钟备份普通窗口（Pro）",
       delAfterRow: "恢复会话后自动删除该会话",
       langHead: "语言 Language",
       langAuto: "自动（跟随浏览器）",

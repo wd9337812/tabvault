@@ -1,18 +1,20 @@
 # TabVault: Tab Session Saver
 
-> A Chrome extension (Manifest V3) that saves every tab in a window as a named
-> session and restores it later exactly as it was — order, URLs and pinned tabs.
+> A Chrome extension (Manifest V3) that saves HTTP/HTTPS tabs in a window as a named
+> session and restores their URLs, order and pinned state later.
 
 - Website: https://wd9337812.github.io/tabvault/
 - Source / issues: https://github.com/wd9337812/tabvault
 - Category: Productivity / browser tab management
 - Price: free (5 manual sessions), Pro is a one-time $6 lifetime license
 - Chrome Web Store: coming soon (pending review)
-- Privacy: 100% local, `chrome.storage` only; no server, no account, no analytics,
-  no cookies; zero `host_permissions`; requests no permission to read pages you are not saving.
-- Features: save & close a window in one click, restore into a new or the current window,
-  crash-recovery banner from the last auto-backup, 15-minute automatic backup (Pro),
+- Privacy: task/session storage is local in `chrome.storage`; no developer content server, no account, no analytics,
+  no cookies; zero `host_permissions`; uses `tabs` for saving, the tab-count badge and optional backup/recovery.
+- Features: save a window and close extra tabs (retains the first tab), restore into a new or the current window,
+  recovery banner from available snapshots, 15-minute automatic backup of normal windows (Pro),
   cross-session search (Pro), export to JSON / Markdown / CSV / clipboard (Pro),
   paste-a-bunch-of-URLs to open or save as a session, built-in English / Chinese UI.
 - Support: https://wd9337812.github.io/tabvault/SUPPORT.html
 - Privacy policy: https://wd9337812.github.io/tabvault/PRIVACY.html
+
+With Pro auto-backup enabled, normal-window tab changes maintain a local recovery cache. Up to 20 automatic snapshots are retained in total; manual sessions are never age-pruned. Recovery uses available snapshots and cannot guarantee unsaved changes.

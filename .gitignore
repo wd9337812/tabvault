@@ -8,3 +8,8 @@ dev/
 .DS_Store
 node_modules/
 worker/.wrangler/
+
+# Private release overrides and build output
+*.private.json
+release-config.js
+.release/

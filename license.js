@@ -57,7 +57,8 @@ const Lic = (() => {
       if (!constantTimeEqual(providedSig, expectedSig))
         return { ok: false, reason: "bad_signature" };
       const payload = JSON.parse(new TextDecoder().decode(payloadBytes));
-      if (payload.exp && Date.now() / 1000 > payload.exp)
+      if (!payload || payload.plan !== 'pro' || (payload.exp !== undefined && (!Number.isFinite(payload.exp) || payload.exp <= 0))) return { ok: false, reason: 'malformed' };
+      if (payload.exp && Date.now() / 1000 >= payload.exp)
         return { ok: false, reason: "expired", exp: payload.exp };
       return { ok: true, plan: payload.plan || "pro", exp: payload.exp, label: payload.label || "" };
     } catch (e) {

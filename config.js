@@ -3,8 +3,8 @@
 // ============================================================
 //
 //  ⚠️ SECRET：Pro License Key 的 HMAC 签名密钥，与 worker / tools/keygen.mjs 必须一致。
-//     重新生成：node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"
-//     真实 SECRET 永远不要提交到公开仓库（git update-index --skip-worktree config.js）。
+//     首次配置可以生成随机串；已发布产品更新时保留原值，保证旧 Key 可用。
+//     真实 SECRET 仅写入发布暂存目录，不提交到公开仓库。
 //
 //  ⚠️ STRIPE_PAYMENT_LINK：指向你自己 Worker 的 /buy（Worker 再 302 到 Stripe Payment Link）。
 //
@@ -20,7 +20,7 @@ const CONFIG = {
     auto: false,            // 自动备份（Pro）
     search: false,          // 跨会话搜索标签（Pro）
     export: false,          // 导出/导入 JSON（Pro）
-    keepAutoBackups: 1      // 免费版只保留最近 1 份自动备份（且默认不开自动备份）
+    keepAutoBackups: 1      // 免费版不开自动备份；已有快照不会在降级时删除
   },
 
   PRO: {
