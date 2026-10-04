@@ -12,6 +12,9 @@
 const I18N = (() => {
   const dict = {
     en: {
+      missingSession: 'This session no longer exists.',
+      nameRequired: 'Enter a session name.',
+      restorePartial: 'Restored {n}/{total} tabs. The saved session has been kept; retry to restore the rest.',
       tSaveFailed: 'Could not save. Check local storage space and retry.',
       tCopyFailed: 'Copy failed. Please try again.',
       tPreview: 'Preview mode does not save data.',
@@ -111,6 +114,9 @@ const I18N = (() => {
       note: "All sessions stay in this browser (chrome.storage). Nothing is uploaded.",
     },
     zh: {
+      missingSession: '这个会话已不存在。',
+      nameRequired: '请输入会话名称。',
+      restorePartial: '已恢复 {n}/{total} 个标签。原会话已保留，请重试以恢复其余标签。',
       tSaveFailed: '保存失败，请检查本地存储空间后重试。',
       tCopyFailed: '复制失败，请重试。',
       tPreview: '预览模式不保存数据。',
@@ -202,13 +208,13 @@ const I18N = (() => {
     },
   };
 
-  let pref = "auto";
+  let pref = "en";
 
   function browserLang() {
     const l = (typeof navigator !== "undefined" && (navigator.language || (navigator.languages || [])[0])) || "en";
     return /^zh/i.test(l) ? "zh" : "en";
   }
-  function lang() { return pref === "en" || pref === "zh" ? pref : browserLang(); }
+  function lang() { return pref === "zh" ? "zh" : "en"; }
   function setPref(v) { pref = v === "en" || v === "zh" ? v : "auto"; }
   function getPref() { return pref; }
 

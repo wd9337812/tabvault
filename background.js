@@ -1,18 +1,18 @@
 importScripts('config.js', 'license.js', 'data.js', 'i18n.js');
 const STORE_SESSIONS = 'tv_sessions', STORE_SETTINGS = 'tv_settings', ALARM_AUTOSAVE = 'tv-autosave';
 const serialize = Data.queue();
-const defaultSettings = { autoOn: false, intervalMin: CONFIG.AUTO_INTERVAL_MIN, delAfterRestore: false, langPref: 'auto', themePref: 'auto' };
+const defaultSettings = { autoOn: false, intervalMin: CONFIG.AUTO_INTERVAL_MIN, delAfterRestore: false, langPref: 'en', themePref: 'light' };
 async function readState() {
   const raw = await chrome.storage.local.get([STORE_SESSIONS, STORE_SETTINGS, 'tv_license']);
   const records = Data.records(raw[STORE_SESSIONS], Data.session), stored = Data.object(raw[STORE_SETTINGS]) ? raw[STORE_SETTINGS] : {};
   const settings = { ...defaultSettings, ...Object.fromEntries(Object.keys(defaultSettings).filter(k => k in stored).map(k => [k, stored[k]])) };
   settings.autoOn = !!settings.autoOn; settings.delAfterRestore = !!settings.delAfterRestore;
   settings.intervalMin = Number.isFinite(settings.intervalMin) && settings.intervalMin >= 1 ? settings.intervalMin : CONFIG.AUTO_INTERVAL_MIN;
-  if (!['en', 'zh', 'auto'].includes(settings.langPref)) settings.langPref = 'auto';
+  if (!['en', 'zh'].includes(settings.langPref)) settings.langPref = 'en';
   if (!['light', 'dark', 'auto'].includes(settings.themePref)) settings.themePref = 'auto';
   const key = raw.tv_license?.key, v = key ? await Lic.verify(key, CONFIG.SECRET) : { ok: false };
   const plan = v.ok && v.plan === 'pro' ? 'pro' : 'free'; settings.plan = plan;
-  I18N.setPref(stored.langResolved || settings.langPref);
+  I18N.setPref(settings.langPref);
   return { sessions: records.values.sort((a, b) => b.createdAt - a.createdAt), settings, plan, raw, invalid: records.invalid, license: v.ok ? v : null };
 }
 const capsFor = s => s.plan === 'pro' ? CONFIG.PRO : CONFIG.FREE;
@@ -52,7 +52,7 @@ function insertSession(s, tabs, { auto = false, windowId, name } = {}) {
     const last = s.sessions.find(x => x.auto && x.windowId === windowId);
     if (last && tabSig(last.tabs) === tabSig(cleanTabs)) return { session: last, skipped: true };
   }
-  const session = Data.session({ id: Data.id(), name: name || (auto ? I18N.t('autoName', { time: new Date().toLocaleString() }) : sessionName(cleanTabs)),
+  const session = Data.session({ id: Data.id(), name: name || (auto ? I18N.t('autoName', { time: new Date().toLocaleString(I18N.lang()==='zh'?'zh-CN':'en-US') }) : sessionName(cleanTabs)),
     createdAt: Date.now(), auto, tabs: cleanTabs, ...(Number.isInteger(windowId) ? { windowId } : {}) });
   if (auto) {
     const manual = s.sessions.filter(x => !x.auto);
@@ -77,13 +77,13 @@ async function saveWindow(s, { auto = false, windowId, andClose = false } = {}) 
   return result;
 }
 async function restoreSession(s, id, here, windowId) {
-  const session = s.sessions.find(x => x.id === id); if (!session) Data.fail('missing', 'Session no longer exists');
+  const session = s.sessions.find(x => x.id === id); if (!session) Data.fail('missing', I18N.t('missingSession'));
   let targetWindow = windowId, restored = 0;
   if (!here) { const win = await chrome.windows.create({ url: 'about:blank' }); targetWindow = win.id; }
   // Explicit windowId prevents focus changes from splitting a restore across windows.
   try {
     for (const tab of session.tabs) { await chrome.tabs.create({ windowId: targetWindow, url: tab.url, pinned: tab.pinned, active: false }); restored++; }
-  } catch { Data.fail('restore', `Restored ${restored}/${session.tabs.length} tabs. The saved session has been kept; retry to restore the rest.`); }
+  } catch { Data.fail('restore', I18N.t('restorePartial',{n:restored,total:session.tabs.length})); }
   if (!here) {
     const blanks = (await chrome.tabs.query({ windowId: targetWindow })).filter(t => t.url === 'about:blank');
     if (blanks.length) await chrome.tabs.remove(blanks.map(t => t.id));
@@ -99,7 +99,7 @@ async function dispatch(op, p = {}) {
   else if (op === 'DELETE') { s.sessions = s.sessions.filter(x => x.id !== p.id); await writeSessions(s); }
   else if (op === 'RENAME') {
     const session = s.sessions.find(x => x.id === p.id); if (!session || session.auto) Data.fail('missing', 'Session no longer exists');
-    if (typeof p.name !== 'string' || !p.name.trim()) Data.fail('invalid', 'Enter a session name'); session.name = p.name.trim().slice(0, 80); await writeSessions(s);
+    if (typeof p.name !== 'string' || !p.name.trim()) Data.fail('invalid', I18N.t('nameRequired')); session.name = p.name.trim().slice(0, 80); await writeSessions(s);
   }
   else if (op === 'RESTORE') extra = await restoreSession(s, p.id, p.here, p.windowId);
   else if (op === 'IMPORT') {
