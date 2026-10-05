@@ -1,18 +1,25 @@
-# wrangler.toml — TabVault Cloudflare Worker 部署配置
-# 部署:  npx wrangler secret put LIC_SECRET        # 与扩展 config.js 的 SECRET 一致
-#        npx wrangler secret put STRIPE_SECRET_KEY # sk_live_…（测完记得轮换）
-#        npx wrangler deploy
-# 免费版：每天 10 万次请求，本场景远用不完 => 0 成本
-
+# Billing v2: server-created Stripe Checkout + isolated D1 orders.
+# Keep LIC_SECRET / STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET / ADMIN_TOKEN in Worker secrets.
 name = "tabvault-pro-api"
 main = "index.js"
 compatibility_date = "2026-09-01"
 
 [vars]
+PRODUCT_SLUG = "tabvault"
+PRODUCT_NAME = "TabVault Pro"
+PUBLIC_ORIGIN = "https://tabvault-pro-api.wd933781.workers.dev"
+CHECKOUT_MODE = "api"
 ALLOW_TEST_PAYMENTS = "false"
-# 你的 Stripe Payment Link（TabVault 专用，$6 一次性买断）
-# 2026-09-28 由用户从 Stripe 后台复制填入
+ENABLE_PROVISIONING = "false"
+STRIPE_PRICE_ID = "price_1UKelZBV2lNTC4WNfGkDGHxG"
+# Retained only for validating existing Payment Link orders and manual fallback.
 STRIPE_PAYMENT_LINK = "https://buy.stripe.com/9B6eVcbtBfOA9Tm2ltbwk01"
+EXPECTED_PAYMENT_LINK_ID = "plink_1UKelwBV2lNTC4WNU0hc6cG2"
+STRIPE_WEBHOOK_ID = "we_1UN8sGBV2lNTC4WNL7C1uXLG"
+ALLOW_PROMOTION_CODES = "false"
+AUTOMATIC_TAX = "true"
 
-# LIC_SECRET / STRIPE_SECRET_KEY 不要写在这里！用命令行注入：
-#   npx wrangler secret put LIC_SECRET
+[[d1_databases]]
+binding = "ORDERS_DB"
+database_name = "tabvault-pro-orders"
+database_id = "4d968296-0171-4f09-b1fa-1b2c14dc1beb"

@@ -26,12 +26,12 @@ React + Tailwind CSS + shadcn/ui（Base UI）+ Motion + Lucide；使用本地打
 
 - 扩展 ZIP 只包含 manifest、运行脚本、样式、页面和图标。manifest.json 放在 ZIP 根目录。
 - config.js 在公开仓库中保持占位密钥；发布包注入与现有线上服务一致的原密钥，避免老 Key 失效。不要把真实密钥提交到 GitHub。
-- Worker 部署：在 worker 目录执行 wrangler deploy --keep-vars，保留现有 LIC_SECRET 和 STRIPE_SECRET_KEY。
-- Worker 将 paid、complete、payment 模式的正式 Session 与 STRIPE_PAYMENT_LINK 对应的实际 Payment Link 核对后才签发。测试环境如需测试订单，单独配置 ALLOW_TEST_PAYMENTS=true；生产默认拒绝。
+- Worker Billing 2.0.0：API 创建 Stripe Checkout，D1 独立订单库，签名 Webhook 核对支付。部署与后台使用说明见 [worker/DEPLOY.md](worker/DEPLOY.md)。保留原 LIC_SECRET；Stripe、Webhook 和管理员密钥仅存 Worker secrets。
+- 购买页先披露订单数据处理，确认后用本商品现有 Price 创建订单。只对正确商品、价格和已完成付款签发；旧 Payment Link 订单兼容。生产拒绝测试订单，首次配置入口已关闭。
 - 当前仍为客户端 HMAC，能读取安装包的技术用户可以取得签名密钥；设备限制和退款撤销并未实现。更强的许可方案应另行迁移到服务端私钥签发或授权记录。
 
 ## 隐私
 
-会话、快照和窗口缓存仅存本机；主动开启备份后会监听标签变化用于本地恢复。显示图标会直接请求对应站点的同源图标，不通过开发者服务。 购买页由 Stripe 处理；开发者不接收使用遥测。完整隐私政策见 docs/PRIVACY.html。
+会话、快照和窗口缓存仅存本机；主动开启备份后会监听标签变化用于本地恢复。显示图标会直接请求对应站点的同源图标，不通过开发者服务。 付款由 Stripe 处理；Cloudflare 保存订单编号、金额与付款／退款状态，用于授权签发和找回，任务与标签会话不会上传到订单服务。开发者不接收使用遥测。完整隐私政策见 docs/PRIVACY.html。
 
 修复列表见 CHANGELOG.md。

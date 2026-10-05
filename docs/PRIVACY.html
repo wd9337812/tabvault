@@ -15,10 +15,10 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid #e5e7eb;color:#8b93
 </head>
 <body>
 <h1>TabVault — Privacy Policy</h1>
-<p style="color:#8b93a7">Effective date 生效日期: 2026-10-04</p>
+<p style="color:#8b93a7">Effective date 生效日期: 2026-10-05</p>
 <div>
   <span class="badge">No accounts 无需账号</span>
-  <span class="badge">Local storage only 仅本地存储</span>
+  <span class="badge">Sessions stored locally 会话存本机</span>
   <span class="badge">No analytics 无统计追踪</span>
   <span class="badge">Local sessions 本地会话</span>
 </div>
@@ -55,11 +55,9 @@ normal browser windows every N minutes; snapshots are written to local storage o
 <code>sidePanel</code> — shows TabVault's own user interface in Chrome's side panel.</p>
 
 <p><strong>Licensing &amp; payments.</strong><br>
-The optional Pro upgrade is a one-time purchase processed by Stripe (stripe.com) on
-Stripe-hosted checkout pages. Card details are handled entirely by Stripe and never reach us.
-When you buy, our small worker verifies with Stripe that the payment succeeded and returns a
-license key; the extension then checks that key <em>locally</em> in your browser. We do not
-receive usage telemetry from the extension.</p>
+Pro is an optional one-time purchase through Stripe-hosted checkout. Before creating a checkout order, our purchase page explains the order data processing and asks you to agree and continue. Full card numbers and CVC are handled by Stripe. Our Cloudflare Worker creates the checkout and verifies its payment status through Stripe's API and signed webhooks. Each product has a separate Cloudflare D1 order database storing order, Checkout Session, PaymentIntent, product, price and event identifiers; amount, currency, payment/refund and license-delivery status; and timestamps. These records support license delivery, recovery and payment support. We do not store card details, checkout email addresses, billing addresses, raw webhook bodies, extension tasks or saved tab sessions in that database. The extension verifies the issued license locally. No usage telemetry is sent to the developer.</p>
+<p><strong>Order retention &amp; your requests.</strong><br>
+Order records are retained for license recovery and payment support; uninstalling the extension does not delete those server records. To request access, correction or deletion, contact the developer privately through the contact details on the GitHub profile. Do not publish order references or license keys in public issues. Deleting our order records does not delete Stripe's separate payment records and can affect license recovery. There is no automatic order-retention expiry at present. Stripe and Cloudflare process payment and service requests under their own policies: <a href="https://stripe.com/privacy">Stripe privacy</a> and <a href="https://www.cloudflare.com/privacypolicy/">Cloudflare privacy</a>.</p>
 
 <p><strong>Contact:</strong> open an issue at
 https://github.com/wd9337812/tabvault or email the developer via the GitHub profile.</p>
@@ -92,9 +90,9 @@ https://github.com/wd9337812/tabvault or email the developer via the GitHub prof
 <code>sidePanel</code>：在 Chrome 侧边栏显示扩展自己的界面。</p>
 
 <p><strong>许可与支付。</strong><br>
-Pro 一次性买断由 Stripe 在其托管结账页处理，银行卡信息完全由 Stripe 管理，不经过我们。
-购买后，我们的轻量服务会向 Stripe 确认支付成功并返回一个 License Key，扩展随后在你的
-浏览器<em>本地</em>校验该密钥。我们不接收任何使用遥测。</p>
+Pro 为可选的一次性买断，通过 Stripe 托管结账页付款。创建结账订单前，购买页会说明订单数据处理方式，由你点击同意后继续。完整卡号和 CVC 由 Stripe 处理。我们的 Cloudflare Worker 创建结账订单，通过 Stripe API 与经过签名验证的付款回调核对状态。两个商品各自使用独立的 Cloudflare D1 订单数据库，保存订单、Checkout Session、PaymentIntent、商品、价格与回调事件编号，金额、币种、付款／退款和授权签发状态，以及时间，用于授权签发、Key 找回和付款支持。该数据库不保存银行卡信息、结账邮箱、账单地址、原始回调内容、扩展任务或保存的标签会话。扩展在本机校验授权；不向开发者发送使用遥测。</p>
+<p><strong>订单保存与数据请求。</strong><br>
+订单记录保留用于授权找回与付款支持；卸载扩展不会删除这些服务器记录。需要查询、更正或删除时，请通过 GitHub 个人主页的联系方式私下联系开发者，勿在公开 Issue 发布付款编号或授权 Key。删除我们的订单记录不会删除 Stripe 独立保存的付款记录，并可能影响授权找回。目前没有自动清理订单的到期机制。Stripe 和 Cloudflare 按各自的隐私政策处理付款及服务请求：<a href="https://stripe.com/privacy">Stripe 隐私政策</a>、<a href="https://www.cloudflare.com/privacypolicy/">Cloudflare 隐私政策</a>。</p>
 
 <p><strong>联系方式：</strong>https://github.com/wd9337812/tabvault 提交 Issue，
 或通过 GitHub 主页邮箱联系开发者。</p>

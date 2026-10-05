@@ -34,34 +34,33 @@ Uninstalling the extension deletes them, so use <b>Export</b> (Pro) before reins
 or switching computers — <b>Import</b> restores the same file.</p>
 
 <h3>Restoring opens a brand-new window — why?</h3>
-<p>By design. TabVault creates a fresh window containing exactly the saved tabs, so it can
-never overwrite or reorder what you already have open.</p>
+<p>Choose whether to restore in a new window or append the saved tabs to the current window. Existing tabs are retained.</p>
 
 <h3>Auto-backup is not running</h3>
 <div class="box">
 <p>Auto-backup is a Pro feature and it is opt-in. Check, in this order:</p>
 <p>1. The panel header shows a <b>PRO</b> badge (if not, activate your license key first).<br>
 2. In the panel's settings drawer, turn on <b>Auto backup</b>.<br>
-3. Chrome must be running — the timer snapshots whichever window was active last.<br>
-4. If you changed the interval, click the extension's <b>Reload ⟳</b> in
-<code>chrome://extensions</code>.</p>
+3. Chrome must be running. Auto-backup snapshots normal windows at the selected interval, initially every 15 minutes; incognito windows are excluded.<br>
+4. Up to 20 automatic snapshots are retained across all windows. Changing the interval updates the timer. Manual sessions are retained separately.</p>
 </div>
 
 <h3>Some tabs are missing from a saved session</h3>
 <p>Only normal <code>http</code>/<code>https</code> pages can be saved. Chrome's internal pages
 (<code>chrome://</code>, the Web Store, extensions' pages) and PDF viewers opened by other
-extensions are skipped, because the browser forbids restoring them. Duplicate URLs are
-collapsed into one entry.</p>
+extensions are skipped, because the browser forbids restoring them. Repeated URLs and pinned tabs are preserved.</p>
+
+<h3>License delivery</h3>
+<p>After payment, copy the license key from the confirmation page into the extension settings. Keep that page’s address to retrieve the same key again. License keys are not automatically emailed. 付款后从成功页复制 Key 到扩展设置中激活；保留地址可重新领取，授权不自动发邮件。</p>
 
 <h3>My license key is not activating</h3>
 <p>Keys are checked locally and are case-sensitive: paste the whole string
 (<code>xxxx.yyyy</code>, one dot, no spaces or line breaks). If it still fails, the key may
-have expired — send us the key and your Stripe receipt ID and we will reissue it.</p>
+have expired. Contact the developer privately through the GitHub profile to check the order and recover the key. Do not post license keys or payment references in public issues.</p>
 
 <h3>Refunds</h3>
 <p>Email your Stripe receipt from within 14 days of purchase and you get a full refund,
-no questions asked; the license is deactivated on our side and Pro simply reverts to Free
-on next check. Purchases older than 14 days are handled case by case.</p>
+no questions asked. Purchases older than 14 days are handled case by case. Refunds are recorded in the order service and refunded orders cannot retrieve a new key. Previously activated offline licenses are not automatically revoked.</p>
 
 <h3>Contact</h3>
 <p>GitHub issues: <a href="https://github.com/wd9337812/tabvault">github.com/wd9337812/tabvault</a><br>
