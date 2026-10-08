@@ -62,4 +62,7 @@ await test('Verified success notification activates only its matching pending pu
 await test('An oversized automatic snapshot leaves manual sessions and previous history intact',async()=>{
  const env=await boot({tv_sessions:[{id:'old',name:'Manual',createdAt:Date.now(),tabs:[{url:'https://example.com/old',title:'Old'}]}]});await env.request('SETTINGS',{autoOn:true});const before=JSON.stringify(env.data.tv_sessions);vm.runInContext('CONFIG.MAX_AUTO_BYTES=100',env.context);const result=await env.request('SAVE_WINDOW',{auto:true,windowId:1});assert.equal(result.ok,false);assert.equal(result.message,'snapshotTooLarge');assert.equal(JSON.stringify(env.data.tv_sessions),before);
 });
+await test('Unchanged windows still roll expired history off at the thirty-day boundary',async()=>{
+ const env=await boot();await env.activate();await env.request('SETTINGS',{autoOn:true});const first=await env.request('SAVE_WINDOW',{auto:true,windowId:1});env.data.tv_sessions[0].createdAt=Date.now()-31*864e5;const result=await env.request('SAVE_WINDOW',{auto:true,windowId:1});assert(result.ok);assert.notEqual(result.session.id,first.session.id);assert.equal(env.data.tv_sessions.filter(session=>session.auto).length,1);assert(env.data.tv_sessions[0].createdAt>Date.now()-10000);
+});
 console.log(`${app} iteration: ${checks.length}/${checks.length} passed`);

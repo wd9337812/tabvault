@@ -54,7 +54,9 @@ function insertSession(s, tabs, { auto = false, windowId, name, projectId='' } =
   const cleanTabs = tabs.map(Data.tab);
   if (auto) {
     const last = s.sessions.find(x => x.auto && x.windowId === windowId);
-    if (last && tabSig(last.tabs) === tabSig(cleanTabs)) return { session: last, skipped: true };
+    const history=s.sessions.filter(x=>x.auto),cutoff=capsFor(s).historyDays?Date.now()-capsFor(s).historyDays*864e5:0;
+    const withinLimits=history.length<=capsFor(s).keepAutoBackups&&history.every(x=>x.createdAt>=cutoff)&&new TextEncoder().encode(JSON.stringify(history)).length<=CONFIG.MAX_AUTO_BYTES;
+    if (last && withinLimits && tabSig(last.tabs) === tabSig(cleanTabs)) return { session: last, skipped: true };
   }
   const session = Data.session({ id: Data.id(), name: name || (auto ? I18N.t('autoName', { time: new Date().toLocaleString(I18N.lang()==='zh'?'zh-CN':'en-US') }) : sessionName(cleanTabs)),
     createdAt: Date.now(), auto, tabs: cleanTabs, projectId, ...(Number.isInteger(windowId) ? { windowId } : {}) });
