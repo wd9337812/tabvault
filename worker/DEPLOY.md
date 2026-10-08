@@ -1,57 +1,42 @@
-# 订单服务部署与管理（Billing 2.0.0）
+# Billing 2.1.0 部署与购买恢复
 
-更新时间：2026-10-05。仅更新 Worker 与网站说明，扩展运行包版本不变。
+代码待发布，2026-10-08。保留现有 Stripe 商品、Price、Payment Link、D1、Webhook 和 LIC_SECRET，禁止为更新新建商品或轮换旧授权签名。
 
-## 已上线的购买流程
+## 流程
 
-插件 /buy → 中英文购买说明与同意 → POST /checkout → Worker 用服务器 Price 创建 Stripe Checkout Session → Stripe 付款 → /success 展示授权 Key。Stripe Webhook 即使用户未返回成功页，也会核对付款并将授权签发状态记入订单。Key 仍由原 LIC_SECRET 确定性派生；本次不轮换它。
+插件生成本机随机凭证 → /buy?claim=… → 订单处理同意 → /checkout → Stripe → 签名 Webhook／Stripe API 核对 → 成功页通知已发布的 EXTENSION_ID → 插件用原凭证请求 /api/activation → 本地验证原格式授权 → Pro。外部消息本身不授予 Pro；关闭成功页仍可通过启动／焦点检查或手动按钮恢复。重复结账请求复用同一订单与 Checkout Session。
 
-每个插件有独立的 D1 ORDERS_DB 与管理员密钥。GET /admin 打开订单后台，语言默认英文，?lang=zh 为中文。登录后可搜索、筛选、分页、向 Stripe 核对状态、领取已付款订单的授权和关闭自有未付款订单。输入完整旧 cs_ 编号后点击 Reconcile checkout reference 可录入、核对旧 Payment Link 订单。旧订单没有全量自动回填；通过旧成功页、回调或管理员核对时记录。
+## 部署顺序
 
-## 配置
-
-wrangler.toml 中的 Price / Payment Link / Webhook 编号可公开。API key、webhook 签名密钥、管理员密钥只放 Worker secrets，不放扩展、GitHub 或文档。LIC_SECRET 继续保留原值，以兼容原有发布包和授权。
-
-| Worker secret | 用途 |
-| --- | --- |
-| LIC_SECRET | 原授权签名配置，禁止随意更换 |
-| STRIPE_SECRET_KEY | Stripe 服务器 API；已有线上值继续使用 |
-| STRIPE_WEBHOOK_SECRET | 本 Worker 的 Stripe 回调签名；两个端点分别配置 |
-| ADMIN_TOKEN | 高强度随机管理员访问密钥；两个后台分别配置 |
-
-关键 vars：CHECKOUT_MODE=api、ALLOW_TEST_PAYMENTS=false、ENABLE_PROVISIONING=false；STRIPE_PRICE_ID 为本产品现有一次性价格；PUBLIC_ORIGIN 为本 Worker HTTPS 地址。旧 STRIPE_PAYMENT_LINK 与 EXPECTED_PAYMENT_LINK_ID 保留用于兼容订单；ALLOW_PROMOTION_CODES、AUTOMATIC_TAX 沿用原链接设置。
-
-## 现有服务后续部署
-
-在 worker 目录操作，使用已登录 Cloudflare 的 Wrangler。执行前确认目标 Worker / 数据库名称，保留 wrangler.toml 的绑定与价格配置：
+1. 先核对 wrangler.toml 的 Worker、D1、Price、产品及 EXTENSION_ID 为已有商店条目。
+2. 在 worker 目录执行迁移，再发布 Worker：
 
 ```sh
 npx wrangler d1 migrations apply ORDERS_DB --remote
-npx wrangler deploy --keep-vars
+npx wrangler deploy
 ```
 
-已应用的迁移不会重复创建表。不要删库、清表或覆盖 LIC_SECRET。秘密值通过交互 secret put 或私密 JSON 的 secret bulk 注入，切勿加到命令参数或提交 JSON 文件。不要将 Wrangler 登录缓存、管理员密钥或 Stripe secret 放进发布包。
+0002_activation.sql 新增凭证、购买邮箱摘要及验证码表，不删除原订单。默认 deploy 同步当前 wrangler.toml vars；若你使用 --keep-vars，应先在 Cloudflare 手动添加 EXTENSION_ID 等新 vars。Secrets 保留现有值。先验证 /status 的 version=2.1.0、activation=true，再发布扩展更新。
 
-## Stripe 回调
+## 邮件恢复配置
 
-端点为 PUBLIC_ORIGIN/webhook；API 版本固定 2025-02-24.acacia，启用 checkout.session.completed、checkout.session.async_payment_succeeded、checkout.session.async_payment_failed、checkout.session.expired、charge.refunded。Worker 验证原始请求签名和 5 分钟时间窗，通过 Stripe API 再核对本产品、服务器订单、价格与付款状态。D1 将订单更新与事件记录放在同一批事务；重复回调不重复签发，临时失败返回错误供 Stripe 重试。
+| 配置 | 位置与用途 |
+| --- | --- |
+| LIC_SECRET | 原 Worker secret；保留原值 |
+| STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET | 原付款与回调 secrets |
+| ADMIN_TOKEN | 原后台认证 secret |
+| EXTENSION_ID | wrangler vars；原商店 ID |
+| RESEND_API_KEY | 新 Worker secret；通过 wrangler secret put 交互设置 |
+| BILLING_EMAIL_FROM | 新 Worker secret 或 vars；Resend 已验证域名下的发件地址 |
 
-GET /api/admin/config（Bearer ADMIN_TOKEN）可读回端点状态、URL、事件列表和 Price 编号，不返回秘密值。GET /status 是不含秘密值的公开运行状态。
+邮件服务配置缺失时，恢复购买会明确提示，自动激活与旧授权码不受影响。验证码 10 分钟、最多 5 次、成功后不可重用；邮箱及请求 IP 做带密钥摘要，D1 不存明文邮箱或验证码。挑战记录超过 24 小时在后续申请时清理，订单摘要保留用于找回。
 
-首次部署助手曾短暂开启 POST /api/admin/provision，并通过受保护请求沿用原链接商品、价格和设置创建回调。现已 ENABLE_PROVISIONING=false，返回 403。日常管理不要开启它；更换端点应在 Stripe 创建对应端点并在 Cloudflare 更换对应签名密钥。
+旧历史订单没有全量邮箱回填。通过管理员 /admin 的付款编号核对、旧成功页或后续有效回调重新核对时会建立摘要索引；若未建立索引，继续使用旧授权码或私下联系支持。不可通过用户填写一个邮箱直接激活。
 
-## 运营与兼容
+## 运营与验证
 
-- 退款在 Stripe Dashboard 处理；回调在后台记录部分／全额退款，拒绝重新签发已退款订单的 Key。
-- 已在扩展中激活的离线授权不会自动撤销。当前客户端 HMAC 签名方案的限制保持不变；若需强制撤销、设备数控制或账户体系，应另做授权协议迁移。
-- 延迟付款在 Stripe 显示成功前不签发；优惠产生 0 金额的自有 API 订单通过服务端 SKU 核对后可签发。
-- 找回旧订单时核实购买者身份，私下发送 Key；勿在 GitHub Issue 公开付款编号或授权。
-- 没有自动授权邮件；用户从成功页领取。Stripe 收据邮件取决于 Stripe 账户配置。
-- 订单数据库只保存授权与付款状态相关字段，不存卡信息、结账邮箱、任务或标签会话；目前不自动清理，数据删除请求由管理员处理。
-- 如需临时回退，设 CHECKOUT_MODE=payment_link 后部署。保留数据库、Webhook 与原签名密钥，原 API 订单仍可通过成功页领取授权。
+/admin 保留受保护的订单搜索、核对、领取授权及关闭自有未付款订单。退款在 Stripe 后台处理，签名回调更新退款状态，服务器拒绝重新签发；已在本机激活的离线 HMAC 授权不会自动撤销，不支持设备数量控制。网站直接购买没有安装实例凭证，可使用成功页的备用授权码。
 
-## 测试
+npm test 包含原付款测试与新增自动激活／购买恢复测试。使用真实 SQLite 和模拟 Stripe／Resend，不真实扣款、不发邮件。上线前在独立测试环境验证真实邮箱送达与已发布扩展回调；真实 AI 也需你的可用服务 Key 验收。测试配置不得临时覆盖生产 Price 或开放 ALLOW_TEST_PAYMENTS。
 
-仓库根目录 npm test：原扩展回归 + worker/billing.test.mjs。需要 Node >=22.13（测试使用内置 SQLite 验证 SQL）；生产 Worker 无 Node/Stripe SDK 依赖。
-
-本次验证了正式 Stripe 的待付款创建与关闭，没有真实扣款。已付款、延迟付款、退款与失败重试由本地模拟 Stripe API 和真实 SQLite 测试覆盖。正式卡不能使用测试卡号；测试购买必须使用独立测试 Worker、测试价格、测试密钥和测试回调，勿临时放开线上 ALLOW_TEST_PAYMENTS。
+回退时可发布上一 Worker，但先停用新版自动入口或恢复上一扩展版本；保留 D1 所有表、Webhook 和签名 secrets。切换旧 Payment Link 不具备安装实例自动配对，须说明手动授权备用流程。

@@ -1,3 +1,4 @@
+import {iterationStrings} from './iteration-strings.js';
 // English is the first-run default. User content is never translated.
 export const strings={
  sessions:['Sessions','会话'],noTabs:['No web pages in this window','这个窗口没有可保存的网页'],searchProPlaceholder:['Search sessions and tabs · Pro','搜索会话和标签 · Pro'],backupPro:['Automatic snapshots are included in Pro.','自动快照为 Pro 功能。'],preferencesSaved:['Preferences saved.','设置已保存。'],partialOpen:['Opened {n}/{total} tabs. Some tabs could not be opened; your input has been kept.','已打开 {n}/{total} 个标签，部分标签打开失败，输入内容已保留。'],licensePlaceholder:['Paste your license key','粘贴授权 Key'],
@@ -51,5 +52,6 @@ export const strings={
  loading:['Opening your workspace…','正在打开工作空间…'],loadFailed:['Could not load your workspace. Please retry.','无法读取工作空间，请重试。'],retry:['Retry','重试'],saveFailed:['Could not save. Please retry.','保存失败，请重试。'],
  pendingCapture:['{n} selections are safely queued. Free up an active task slot to collect them.','有 {n} 个选区已暂存，腾出活动任务空间后会自动收集。'],recoveryData:['Some older records could not be read. Their original data will be kept in a local recovery backup before changes.','部分旧记录无法读取。修改数据前会在本地恢复备份中保留原数据。'],
  'Invalid tags':['Invalid tags. Please check the backup.','标签格式不正确，请检查备份。'],'Invalid due date':['Invalid due date.','到期日格式不正确。'],'Invalid task':['Invalid task record.','任务记录格式不正确。'],'Invalid subtask':['Invalid subtask record.','子任务格式不正确。'],'Invalid list':['Invalid list record.','列表格式不正确。'],'Invalid session':['Invalid session record.','会话记录格式不正确。'],'Invalid session date':['Invalid session date.','会话日期格式不正确。'],'Invalid tab':['Invalid tab record.','标签记录格式不正确。'],'Expected an array':['Invalid backup structure.','备份结构不正确。'],'Only http/https URLs are supported':['Only HTTP/HTTPS pages can be saved.','只能保存 HTTP/HTTPS 网页。'],'Session no longer exists':['This session no longer exists.','这个会话已不存在。'],'Enter a session name':['Enter a session name.','请输入会话名称。'],'Invalid interval':['Enter a backup interval of at least one minute.','备份间隔至少为一分钟。'],'Invalid preference':['Invalid preference.','偏好设置不正确。']
+,...iterationStrings
 };
 export function translator(lang='en') {return (key,vars={})=>String((lang!=='zh'&&key==='tabs'&&vars.n===1?'1 tab':strings[key]?.[lang==='zh'?1:0])??key).replace(/\{(\w+)\}/g,(match,k)=>Object.hasOwn(vars,k)?String(vars[k]):match)};

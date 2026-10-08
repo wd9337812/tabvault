@@ -1,20 +1,11 @@
-# TabVault: Tab Session Saver
+# TabVault
 
-> A Chrome extension (Manifest V3) that saves HTTP/HTTPS tabs in a window as a named
-> session and restores their URLs, order and pinned state later.
+Version: 0.4.0. Chrome 116+. English and Simplified Chinese. Local data and no developer analytics.
 
-- Website: https://wd9337812.github.io/tabvault/
-- Source / issues: https://github.com/wd9337812/tabvault
-- Category: Productivity / browser tab management
-- Price: free (5 manual sessions), Pro is a one-time $6 lifetime license
-- Chrome Web Store: coming soon (pending review)
-- Privacy: task/session storage is local in `chrome.storage`; no developer content server, no account, no analytics,
-  no cookies; zero `host_permissions`; uses `tabs` for saving, the tab-count badge and optional backup/recovery.
-- Features: save a window and close extra tabs (retains the first tab), restore into a new or the current window,
-  recovery banner from available snapshots, 15-minute automatic backup of normal windows (Pro),
-  cross-session search (Pro), export to JSON / Markdown / CSV / clipboard (Pro),
-  paste-a-bunch-of-URLs to open or save as a session, built-in English / Chinese UI.
-- Support: https://wd9337812.github.io/tabvault/SUPPORT.html
-- Privacy policy: https://wd9337812.github.io/tabvault/PRIVACY.html
+免费版支持 10 个手动会话、标题与网址搜索、JSON 导入导出，以及主动开启后的最近 3 份自动快照。Pro 支持无限手动会话、项目空间、备注／标签／置顶、按日期和标签筛选、批量移动／合并／去重，以及浏览器分组恢复和跳过重复网址。Pro 自动历史最长 30 天、最多 500 份、快照合计 4 MB，达到任一上限时滚动清理。手动会话不会被快照清理。
 
-With Pro auto-backup enabled, normal-window tab changes maintain a local recovery cache. Up to 20 automatic snapshots are retained in total; manual sessions are never age-pruned. Recovery uses available snapshots and cannot guarantee unsaved changes.
+Pro: one-time $6, tax shown by Stripe. Automatic activation for extension-started purchases. Optional verified-email recovery requires sender configuration; existing codes remain supported. AI usage is separate if applicable. No cloud content sync or team accounts.
+
+Source: https://github.com/wd9337812/tabvault
+Privacy: https://wd9337812.github.io/tabvault/PRIVACY.html
+Support: https://wd9337812.github.io/tabvault/SUPPORT.html

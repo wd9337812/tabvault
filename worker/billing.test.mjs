@@ -8,7 +8,7 @@ import worker,{computeKey} from './index.js';
 globalThis.crypto??=webcrypto;
 const directory=path.dirname(fileURLToPath(import.meta.url)),slug=/PRODUCT_SLUG = "([^"]+)"/.exec(fs.readFileSync(path.join(directory,'wrangler.toml'),'utf8'))[1];
 export function database(){
- const sqlite=new DatabaseSync(':memory:');sqlite.exec(fs.readFileSync(path.join(directory,'migrations/0001_orders.sql'),'utf8'));
+ const sqlite=new DatabaseSync(':memory:');for(const file of fs.readdirSync(path.join(directory,'migrations')).filter(name=>name.endsWith('.sql')).sort())sqlite.exec(fs.readFileSync(path.join(directory,'migrations',file),'utf8'));
  const adapter={sqlite,fail:false,prepare(sql){let args=[];return{bind(...values){args=values;return this},async first(){if(adapter.fail)throw new Error('storage failure');return sqlite.prepare(sql).get(...args)||null},async all(){if(adapter.fail)throw new Error('storage failure');return{results:sqlite.prepare(sql).all(...args)}},async run(){if(adapter.fail)throw new Error('storage failure');return{success:true,meta:sqlite.prepare(sql).run(...args)}}}},async batch(statements){if(adapter.fail)throw new Error('storage failure');sqlite.exec('BEGIN');try{const output=[];for(const statement of statements)output.push(await statement.run());sqlite.exec('COMMIT');return output}catch(error){sqlite.exec('ROLLBACK');throw error}}};return adapter;
 }
 export function fixture(){

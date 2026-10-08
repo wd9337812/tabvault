@@ -1,11 +1,11 @@
 {
   "name": "tabvault",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "scripts": {
     "build": "node tools/build-ui.mjs",
-    "test": "node tools/regression.mjs && node worker/billing.test.mjs"
+    "test": "node tools/regression.mjs && node tools/iteration.mjs && node worker/billing.test.mjs && node worker/activation.test.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",

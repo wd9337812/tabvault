@@ -38,13 +38,16 @@ const Data = (() => {
     if (!object(x) || !http(x.url) || (x.title !== undefined && typeof x.title !== 'string')) fail('invalid', 'Invalid tab');
     const icon = x.fav || x.favIconUrl;
     const fav = http(icon) && new URL(icon).origin === new URL(x.url).origin ? icon : '';
-    return { url: x.url, title: text(x.title, 1000) || x.url, fav, pinned: !!x.pinned };
+    let group;
+    if(x.group!==undefined){if(!object(x.group)||!validId(String(x.group.id))||typeof x.group.title!=='string'||!['grey','blue','red','yellow','green','pink','purple','cyan','orange'].includes(x.group.color))fail('invalid','Invalid tab group');group={id:String(x.group.id),title:text(x.group.title,200),color:x.group.color,collapsed:!!x.group.collapsed};}
+    return { url: x.url, title: text(x.title, 1000) || x.url, fav, pinned: !!x.pinned, ...(group?{group}:{} ) };
   }
   function session(x) {
     if (!object(x) || !validId(x.id) || typeof x.name !== 'string' || !x.name.trim() || !Array.isArray(x.tabs) || !x.tabs.length) fail('invalid', 'Invalid session');
     if (!Number.isFinite(x.createdAt) || x.createdAt < 0) fail('invalid', 'Invalid session date');
-    return { id: x.id, name: x.name.trim().slice(0, 200), createdAt: x.createdAt, auto: !!x.auto, tabs: x.tabs.map(tab), ...(Number.isInteger(x.windowId) ? { windowId: x.windowId } : {}) };
+    return { id: x.id, name: x.name.trim().slice(0, 200), createdAt: x.createdAt, auto: !!x.auto, tabs: x.tabs.map(tab), projectId:validId(x.projectId)?x.projectId:'',note:text(x.note,10000),tags:tags(x.tags),pinned:!!x.pinned, ...(Number.isInteger(x.windowId) ? { windowId: x.windowId } : {}) };
   }
+  function project(x){const clean=list(x);return{...clean,note:text(x.note,2000)};}
   function records(input, normalize, strict = false) {
     if (input === undefined && !strict) return { values: [], invalid: false };
     if (!Array.isArray(input)) { if (strict) fail('invalid', 'Expected an array'); return { values: [], invalid: true }; }
@@ -61,5 +64,5 @@ const Data = (() => {
     const old = await chrome.storage.local.get(backupKey);
     if (!old[backupKey]) await chrome.storage.local.set({ [backupKey]: { at: Date.now(), ...Object.fromEntries(keys.map(k => [k, raw[k] ?? null])) } });
   }
-  return { fail, id, object, text, validId, http, date, tags, list, task, tab, session, records, queue, protect };
+  return { fail, id, object, text, validId, http, date, tags, list, task, tab, session, project, records, queue, protect };
 })();

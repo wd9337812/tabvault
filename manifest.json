@@ -1,14 +1,15 @@
 {
   "manifest_version": 3,
   "name": "TabVault — Tab Session Saver",
-  "version": "0.3.0",
-  "description": "Save browser tabs as sessions and restore them later. Optional Pro backups keep up to 20 snapshots across normal windows.",
+  "version": "0.4.0",
+  "description": "Save tabs by project, restore browser groups and revisit local snapshots. Free JSON backups; optional Pro organization and history.",
   "author": "you",
   "permissions": [
     "storage",
     "tabs",
     "alarms",
-    "sidePanel"
+    "sidePanel",
+    "tabGroups"
   ],
   "action": {
     "default_title": "Open TabVault sidebar",
@@ -39,5 +40,13 @@
       "description": "Save the current window as a session"
     }
   },
-  "minimum_chrome_version": "116"
+  "minimum_chrome_version": "116",
+  "host_permissions": [
+    "https://tabvault-pro-api.wd933781.workers.dev/*"
+  ],
+  "externally_connectable": {
+    "matches": [
+      "https://tabvault-pro-api.wd933781.workers.dev/*"
+    ]
+  }
 }
