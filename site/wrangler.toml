@@ -1,0 +1,9 @@
+name = "tabvault-site"
+compatibility_date = "2026-10-09"
+workers_dev = false
+routes = [{ pattern = "tabvault.tabplugins.top", custom_domain = true }]
+
+[assets]
+directory = "../docs"
+html_handling = "auto-trailing-slash"
+not_found_handling = "404-page"

@@ -2,13 +2,17 @@
 # Keep LIC_SECRET / STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET / ADMIN_TOKEN in Worker secrets.
 name = "tabvault-pro-api"
 main = "index.js"
-compatibility_date = "2026-09-01"
+compatibility_date = "2026-10-09"
+
+workers_dev = true
+routes = [{ pattern = "pay-tabvault.tabplugins.top", custom_domain = true }]
 
 [vars]
 EXTENSION_ID = "lcdbcmmcbonjgbjnagnbfpaadfnlaimm"
 PRODUCT_SLUG = "tabvault"
 PRODUCT_NAME = "TabVault Pro"
-PUBLIC_ORIGIN = "https://tabvault-pro-api.wd933781.workers.dev"
+PUBLIC_ORIGIN = "https://pay-tabvault.tabplugins.top"
+SITE_ORIGIN = "https://tabvault.tabplugins.top"
 CHECKOUT_MODE = "api"
 ALLOW_TEST_PAYMENTS = "false"
 ENABLE_PROVISIONING = "false"

@@ -1,6 +1,6 @@
-# Billing 2.1.0 部署与购买恢复
+# Billing 2.1.1 部署与购买恢复
 
-代码待发布，2026-10-08。保留现有 Stripe 商品、Price、Payment Link、D1、Webhook 和 LIC_SECRET，禁止为更新新建商品或轮换旧授权签名。
+已于 2026-10-09 部署。保留现有 Stripe 商品、Price、Payment Link、D1、Webhook 和 LIC_SECRET，禁止为更新新建商品或轮换旧授权签名。
 
 ## 流程
 
@@ -16,7 +16,7 @@ npx wrangler d1 migrations apply ORDERS_DB --remote
 npx wrangler deploy
 ```
 
-0002_activation.sql 新增凭证、购买邮箱摘要及验证码表，不删除原订单。默认 deploy 同步当前 wrangler.toml vars；若你使用 --keep-vars，应先在 Cloudflare 手动添加 EXTENSION_ID 等新 vars。Secrets 保留现有值。先验证 /status 的 version=2.1.0、activation=true，再发布扩展更新。
+0002_activation.sql 新增凭证、购买邮箱摘要及验证码表，不删除原订单。默认 deploy 同步当前 wrangler.toml vars；若你使用 --keep-vars，应先在 Cloudflare 手动添加 EXTENSION_ID 等新 vars。Secrets 保留现有值。先验证 /status 的 version=2.1.1、activation=true，再发布扩展更新。
 
 ## 邮件恢复配置
 
@@ -40,3 +40,12 @@ npx wrangler deploy
 npm test 包含原付款测试与新增自动激活／购买恢复测试。使用真实 SQLite 和模拟 Stripe／Resend，不真实扣款、不发邮件。上线前在独立测试环境验证真实邮箱送达与已发布扩展回调；真实 AI 也需你的可用服务 Key 验收。测试配置不得临时覆盖生产 Price 或开放 ALLOW_TEST_PAYMENTS。
 
 回退时可发布上一 Worker，但先停用新版自动入口或恢复上一扩展版本；保留 D1 所有表、Webhook 和签名 secrets。切换旧 Payment Link 不具备安装实例自动配对，须说明手动授权备用流程。
+
+
+## 2026-10-09 正式域名与已完成项目
+
+官网：https://tabvault.tabplugins.top/ 。付款：https://pay-tabvault.tabplugins.top/buy 。管理：https://pay-tabvault.tabplugins.top/admin 。发件：TabVault <tabvault@send.tabplugins.top>。
+
+原 D1 已应用 0002_activation.sql，邮件密钥存放在 Worker Secrets。原 workers.dev 和 Stripe Webhook 保留。网站使用 site/wrangler.toml 部署至 Cloudflare Worker static assets，非 GitHub Pages 自动更新。
+
+Resend 已接受两个产品发往官方模拟地址的测试；正式收件与已发布扩展自动激活仍需验收。正式环境只创建并关闭未付款测试结账，没有扣款。静态官网配置使用 auto-trailing-slash 映射主页。

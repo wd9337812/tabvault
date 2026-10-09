@@ -1,5 +1,12 @@
 # 0.4.0 · 2026-10-08
 
+## 0.4.1 · 2026-10-09
+
+- Official website: https://tabvault.tabplugins.top/
+- Billing origin: https://pay-tabvault.tabplugins.top; original workers.dev address and Stripe webhook remain available.
+- Billing 2.1.1 adds custom-domain policy/support links.
+- Existing local data and Pro signing configuration are preserved.
+
 免费版支持 10 个手动会话、标题与网址搜索、JSON 导入导出，以及主动开启后的最近 3 份自动快照。Pro 支持无限手动会话、项目空间、备注／标签／置顶、按日期和标签筛选、批量移动／合并／去重，以及浏览器分组恢复和跳过重复网址。Pro 自动历史最长 30 天、最多 500 份、快照合计 4 MB，达到任一上限时滚动清理。手动会话不会被快照清理。
 
 - 增加服务端核对的自动激活与购买恢复入口，备用授权码折叠。

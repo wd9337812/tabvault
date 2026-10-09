@@ -14,7 +14,7 @@ const CONFIG = {
   PRODUCT: 'tabvault',
   SECRET: "REPLACE_WITH_YOUR_OWN_SECRET",
 
-  STRIPE_PAYMENT_LINK: "https://tabvault-pro-api.wd933781.workers.dev/buy",
+  STRIPE_PAYMENT_LINK: "https://pay-tabvault.tabplugins.top/buy",
 
   FREE: {
     maxManualSessions: 10,   // 免费可保存的手动会话数

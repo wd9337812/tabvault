@@ -1,10 +1,10 @@
-# TabVault 0.4.0 更新发布指南
+# TabVault 0.4.1 更新发布指南
 
 这次更新在原商店条目中上传，保留原扩展 ID；不要新建条目、卸载旧扩展或轮换授权配置。Chrome 商店上架完成后，将真实商店地址填入官网安装按钮。
 
 ## 上传文件
 
-- 代码包：tabvault-0.4.0.zip。manifest 位于根目录。
+- 代码包：tabvault-0.4.1.zip。manifest 位于根目录。
 - 商店图标：icons/icon-128.png，128×128 PNG；图形位于中间 96×96，四边各 16px 透明边距。
 - 必填小型宣传图：440×280 PNG。
 - 可选横幅：1400×560 PNG。
@@ -23,9 +23,9 @@ Chrome 图片要求见 [官方图片说明](https://developer.chrome.com/docs/we
 
 ## 不变的公开链接
 
-- 官网：https://wd9337812.github.io/tabvault/
-- 隐私政策：https://wd9337812.github.io/tabvault/PRIVACY.html
-- 支持：https://wd9337812.github.io/tabvault/SUPPORT.html
+- 官网：https://tabvault.tabplugins.top/
+- 隐私政策：https://tabvault.tabplugins.top/PRIVACY.html
+- 支持：https://tabvault.tabplugins.top/SUPPORT.html
 
 更新包完成上传后，核对新版版本号、两种语言的图片、Pro 功能披露和隐私信息，然后提交审核。源码和官网更新不会自动更新 Chrome 商店。
 

@@ -1,11 +1,11 @@
 # TabVault
 
-Version: 0.4.0. Chrome 116+. English and Simplified Chinese. Local data and no developer analytics.
+Version: 0.4.1. Chrome 116+. English and Simplified Chinese. Local data and no developer analytics.
 
 免费版支持 10 个手动会话、标题与网址搜索、JSON 导入导出，以及主动开启后的最近 3 份自动快照。Pro 支持无限手动会话、项目空间、备注／标签／置顶、按日期和标签筛选、批量移动／合并／去重，以及浏览器分组恢复和跳过重复网址。Pro 自动历史最长 30 天、最多 500 份、快照合计 4 MB，达到任一上限时滚动清理。手动会话不会被快照清理。
 
 Pro: one-time $6, tax shown by Stripe. Automatic activation for extension-started purchases. Optional verified-email recovery requires sender configuration; existing codes remain supported. AI usage is separate if applicable. No cloud content sync or team accounts.
 
 Source: https://github.com/wd9337812/tabvault
-Privacy: https://wd9337812.github.io/tabvault/PRIVACY.html
-Support: https://wd9337812.github.io/tabvault/SUPPORT.html
+Privacy: https://tabvault.tabplugins.top/PRIVACY.html
+Support: https://tabvault.tabplugins.top/SUPPORT.html
