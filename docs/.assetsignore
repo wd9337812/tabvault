@@ -1,0 +1,15 @@
+# Publish only the product website and its visual assets.
+*
+!index.html
+!landing.css
+!landing.js
+!PRIVACY.html
+!SUPPORT.html
+!404.html
+!sitemap.xml
+!llms.txt
+!assets/
+!assets/**
+*.md
+*.map
+*.zip

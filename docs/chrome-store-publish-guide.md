@@ -32,3 +32,5 @@ Chrome 图片要求见 [官方图片说明](https://developer.chrome.com/docs/we
 ## 此次新增披露
 
 付款服务新增购买邮箱摘要、自动激活配对和可选验证码邮件；更新 PRIVACY.html 已说明。新增 tabGroups 权限用于读取与恢复分组名称、颜色及折叠状态。发布前按新版界面替换 Pro／设置相关截图。生产验收前阅读 worker/DEPLOY.md。
+
+客服邮箱：support@tabplugins.top。商店后台填写该公开客服邮箱；官网使用 Cloudflare 子域名，源码仓库无需作为公开支持入口。

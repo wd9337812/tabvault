@@ -6,6 +6,7 @@ Version: 0.4.1. Chrome 116+. English and Simplified Chinese. Local data and no d
 
 Pro: one-time $6, tax shown by Stripe. Automatic activation for extension-started purchases. Optional verified-email recovery requires sender configuration; existing codes remain supported. AI usage is separate if applicable. No cloud content sync or team accounts.
 
-Source: https://github.com/wd9337812/tabvault
+Website: https://tabvault.tabplugins.top/
 Privacy: https://tabvault.tabplugins.top/PRIVACY.html
 Support: https://tabvault.tabplugins.top/SUPPORT.html
+Contact: support@tabplugins.top

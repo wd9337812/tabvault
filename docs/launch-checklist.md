@@ -9,3 +9,5 @@
 - [ ] 核对 Cloudflare 官网、隐私与支持链接。源码分支和本地 ZIP 不等于商店已发布。
 
 详见 worker/DEPLOY.md 与 chrome-store-publish-guide.md。
+
+客服邮箱：support@tabplugins.top。商店后台填写该公开客服邮箱；官网使用 Cloudflare 子域名，源码仓库无需作为公开支持入口。

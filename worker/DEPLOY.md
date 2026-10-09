@@ -49,3 +49,8 @@ npm test 包含原付款测试与新增自动激活／购买恢复测试。使�
 原 D1 已应用 0002_activation.sql，邮件密钥存放在 Worker Secrets。原 workers.dev 和 Stripe Webhook 保留。网站使用 site/wrangler.toml 部署至 Cloudflare Worker static assets，非 GitHub Pages 自动更新。
 
 Resend 已接受两个产品发往官方模拟地址的测试；正式收件与已发布扩展自动激活仍需验收。正式环境只创建并关闭未付款测试结账，没有扣款。静态官网配置使用 auto-trailing-slash 映射主页。
+
+
+## 官网与客服入口更新 · 2026-10-09
+
+官网已移除 GitHub 源码入口，支持和隐私申请统一使用 support@tabplugins.top。Cloudflare Email Routing 已启用并转发到运营方已验证的收件地址。docs/.assetsignore 仅发布产品页面和视觉素材，内部 Markdown 文档不在官网提供。仓库可转为私密，不影响现有 Cloudflare 官网或支付部署；本次无需重新打包插件安装包。真实邮箱收信需由运营方从另一邮箱发送测试信验收。
