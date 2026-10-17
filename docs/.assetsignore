@@ -13,3 +13,7 @@
 *.md
 *.map
 *.zip
+
+assets/shot-*.jpg
+
+assets/tile-top.jpg

@@ -6,4 +6,8 @@ The docs/.assetsignore allowlist publishes product pages and visual assets only.
 
 ## Privacy-only rollout · 2026-10-17
 
-The store update is under review. This rollout publishes the current PRIVACY.html using a staged copy of the existing live website, preserving its homepage, landing scripts, support page and visual assets. New product benefits and screenshots in the source tree remain scheduled for the store release window; do not publish the full current docs directory as part of a privacy-only change. Billing is unchanged. See rollout-2026-10-17.md for deployment and validation records.
+The initial rollout published PRIVACY.html using a staged copy of the existing live website and preserved its homepage and screenshots. See rollout-2026-10-17.md for that historical deployment. Billing was unchanged.
+
+## Full product-page rollout · 2026-10-17
+
+The owner subsequently requested immediate publication of the new product pages, superseding the earlier hold on homepage copy and screenshots. The homepage now describes 0.5.0 and uses its English/Chinese release screenshots, updated feature comparison, support text, reading options and social preview. The public store still showed 0.4.1 when checked; a visible bilingual notice distinguishes the described version from actual store availability. No extension or payment backend was deployed. Old screenshot JPEGs and the obsolete promotional banner are excluded from static publication. See product-rollout-2026-10-17.md for validation and deployment records.

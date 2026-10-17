@@ -1,10 +1,18 @@
 # TabVault
 
-Version: 0.4.1. Chrome 116+. English and Simplified Chinese. Local extension data and no extension usage analytics. The TabPlugins and product homepages use Google Analytics 4 for website traffic; see the privacy policy.
+Features described: 0.5.0. Chrome 116+. Browser-language default, English fallback, manual English/Simplified Chinese. Three Free text sizes. Store review and distribution can lag; check the installed version.
 
-免费版支持 10 个手动会话、标题与网址搜索、JSON 导入导出，以及主动开启后的最近 3 份自动快照。Pro 支持无限手动会话、项目空间、备注／标签／置顶、按日期和标签筛选、批量移动／合并／去重，以及浏览器分组恢复和跳过重复网址。Pro 自动历史最长 30 天、最多 500 份、快照合计 4 MB，达到任一上限时滚动清理。手动会话不会被快照清理。
+Free: 30 manual sessions · 3 projects; Notes, tags, pins and title/URL search; JSON backup · basic Markdown and link export; Selected-page, group and pinned-tab restore; Skip open duplicates · preview differences; Preview launch editing and duplicate references; Three text sizes · local data-change undo; Optional snapshots: up to 24 hours / 50 / 4 MB.
 
-Pro: one-time $6, tax shown by Stripe. Automatic activation for extension-started purchases. Optional verified-email recovery requires sender configuration; existing codes remain supported. AI usage is separate if applicable. No cloud content sync or team accounts.
+Pro: No manual-session or project count limits; Batch-recover selected missing pages; Save named multi-window launch plans; Apply reviewed cross-session cleanup; Advanced batch organization and project launch; CSV export; Snapshots: up to 30 days / 500 / 4 MB.
+
+Automatic snapshots are off by default. Free: up to 24 hours / 50 snapshots; Pro: up to 30 days / 500. Both share a 4 MB total snapshot limit, so actual coverage can be shorter. Snapshot cleanup does not delete manual sessions.
+
+Saved URLs and supported tab metadata, including pinned tabs and browser groups. It does not restore passwords, logins, form inputs or unsaved page state. Launch plans open selected windows in sequence; stopping takes effect after the current window finishes. Automatic history can only restore records that were actually saved.
+
+Applicable tax is shown at checkout. Each product is purchased separately. Existing Pro licenses include this update. Start in the extension for automatic activation after payment verification. Email recovery and existing license codes remain available.
+
+Content stays local; no extension usage analytics or cloud sync. The website has separate traffic analytics described in its privacy policy.
 
 Website: https://tabvault.tabplugins.top/
 Privacy: https://tabvault.tabplugins.top/PRIVACY.html
