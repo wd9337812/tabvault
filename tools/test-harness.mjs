@@ -7,7 +7,7 @@ export const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..'
 export const app=JSON.parse(fs.readFileSync(path.join(root,'manifest.json'),'utf8')).name.startsWith('TabTasks')?'tabtasks':'tabvault';
 const clone=x=>x===undefined?undefined:structuredClone(x);
 function event(){const listeners=[];return {listeners,addListener(fn){listeners.push(fn)},async emit(...args){return Promise.all(listeners.map(fn=>fn(...args)))}}}
-export async function boot(data={}) {
+export async function boot(data={},code={}) {
   const env={data:clone(data),failNextSet:false,alarms:new Map(),createAlarmCount:0,tabs:[{id:1,windowId:1,url:'https://example.com/start',title:'Start',pinned:false}],created:[],removed:[],lastTabId:1,clock:0};
   const chrome={
     storage:{onChanged:event(),local:{
@@ -29,9 +29,9 @@ export async function boot(data={}) {
     windows:{WINDOW_ID_NONE:-1,onRemoved:event(),onFocusChanged:event(),async getAll(o={}){return [...new Set(env.tabs.map(t=>t.windowId))].map(id=>({id,...(o.populate?{tabs:clone(env.tabs.filter(t=>t.windowId===id))}:{})}))},async create(){const id=10+new Set(env.tabs.filter(tab=>tab.windowId>=10).map(tab=>tab.windowId)).size;env.tabs.push({id:++env.lastTabId,windowId:id,url:'about:blank'});return{id}}},
     scripting:{async executeScript(){return[{result:{title:'Captured',url:'https://example.com/start',excerpt:'Page text'}}]}}
   };
-  const ctx=vm.createContext({chrome,crypto:webcrypto,TextEncoder,TextDecoder,btoa,atob,URL,AbortSignal,fetch:(...args)=>env.fetch?env.fetch(...args):Promise.reject(new Error('Network is mocked in tests')),console,Date,setTimeout:()=>1,clearTimeout(){},navigator:{language:'en'}});
-  ctx.importScripts=(...files)=>{for(const f of files)vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),ctx,{filename:f})};
-  vm.runInContext(fs.readFileSync(path.join(root,'background.js'),'utf8'),ctx,{filename:'background.js'});
+  const ctx=vm.createContext({chrome,crypto:webcrypto,TextEncoder,TextDecoder,btoa,atob,URL,AbortSignal,fetch:(...args)=>env.fetch?env.fetch(...args):Promise.reject(new Error('Network is mocked in tests')),console,Date,structuredClone,setTimeout:()=>1,clearTimeout(){},navigator:{language:'en'}});
+  ctx.importScripts=(...files)=>{for(const f of files)vm.runInContext(code[f]??fs.readFileSync(path.join(root,f),'utf8'),ctx,{filename:f})};
+  vm.runInContext(code['background.js']??fs.readFileSync(path.join(root,'background.js'),'utf8'),ctx,{filename:'background.js'});
   env.chrome=chrome;env.context=ctx;env.request=async(op,p)=>{try{return await vm.runInContext('request',ctx)(op,p)}catch(e){return{ok:false,code:e.code,message:e.message}}};
   env.drain=()=>vm.runInContext('serialize',ctx)(async()=>{});
   await env.drain();

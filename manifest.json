@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TabVault — Tab Session Saver",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Save tabs by project, restore browser groups and revisit local snapshots. Free JSON backups; optional Pro organization and history.",
   "author": "you",
   "permissions": [

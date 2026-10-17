@@ -64,5 +64,10 @@ const Data = (() => {
     const old = await chrome.storage.local.get(backupKey);
     if (!old[backupKey]) await chrome.storage.local.set({ [backupKey]: { at: Date.now(), ...Object.fromEntries(keys.map(k => [k, raw[k] ?? null])) } });
   }
-  return { fail, id, object, text, validId, http, date, tags, list, task, tab, session, project, records, queue, protect };
+  // Non-cryptographic revision identifier; it never authenticates licenses or payments.
+  function fingerprint(value){const text=JSON.stringify(value);let a=2166136261,b=2246822519;for(let i=0;i<text.length;i++){a=Math.imul(a^text.charCodeAt(i),16777619);b=Math.imul(b^text.charCodeAt(i),3266489917)}return text.length+':'+(a>>>0).toString(16)+':'+(b>>>0).toString(16)}
+  const undoEntries=rows=>rows.map((x,index)=>[x&&typeof x==='object'&&typeof x.id==='string'?x.id:'unkeyed_'+index,x]);
+  function makeUndo(before,after){const changes={};for(const key of Object.keys(before)){const old=new Map(undoEntries(before[key])),now=new Map(undoEntries(after[key]));const rows=[];for(const id of new Set([...old.keys(),...now.keys()]))if(JSON.stringify(old.get(id))!==JSON.stringify(now.get(id)))rows.push({id,exists:old.has(id),before:old.get(id)});if(rows.length)changes[key]={rows,order:[...old.keys()]}}return changes}
+  function applyUndo(current,changes){const result={...current};for(const[key,change]of Object.entries(changes)){if(!Array.isArray(current[key])||!Array.isArray(change.rows)||!Array.isArray(change.order))fail('invalid','undoExpired');const rows=new Map(undoEntries(current[key]));for(const row of change.rows){if(row.exists)rows.set(row.id,row.before);else rows.delete(row.id)}result[key]=change.order.filter(id=>rows.has(id)).map(id=>rows.get(id));for(const[id,value]of rows)if(!change.order.includes(id))result[key].push(value)}return result}
+  return { fingerprint, makeUndo, applyUndo, fail, id, object, text, validId, http, date, tags, list, task, tab, session, project, records, queue, protect };
 })();

@@ -208,13 +208,13 @@ const I18N = (() => {
     },
   };
 
-  let pref = "en";
+  let pref = "auto";
 
   function browserLang() {
-    const l = (typeof navigator !== "undefined" && (navigator.language || (navigator.languages || [])[0])) || "en";
+    const l = (typeof navigator !== "undefined" && (chrome.i18n?.getUILanguage?.() || navigator.language || (navigator.languages || [])[0])) || "en";
     return /^zh/i.test(l) ? "zh" : "en";
   }
-  function lang() { return pref === "zh" ? "zh" : "en"; }
+  function lang() { try { return pref === "auto" ? browserLang() : pref === "zh" ? "zh" : "en"; } catch { return "en"; } }
   function setPref(v) { pref = v === "en" || v === "zh" ? v : "auto"; }
   function getPref() { return pref; }
 

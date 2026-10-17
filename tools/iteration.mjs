@@ -29,8 +29,8 @@ if(app==='tabtasks'){
  await test('Incomplete or refused AI responses cannot become task edits',async()=>{assert.throws(()=>aiResponseText({stop_reason:'max_tokens',content:[{type:'text',text:'{}'}]},'anthropic'));assert.throws(()=>aiResponseText({choices:[{finish_reason:'length',message:{content:'{}'}}]},'openai'));assert.throws(()=>aiResponseText({choices:[{message:{refusal:'No'}}]},'openai'))});
 }else{
  const tab=(url,group)=>({url,title:url,...(group?{group}:{} )}),saved=(id,extras={})=>({id,name:id,createdAt:Date.now(),auto:false,tabs:[tab('https://example.com/'+id)],...extras});
- await test('Free backups, ten-session cap and rolling snapshots retain existing records',async()=>{
-  const env=await boot();assert((await env.request('IMPORT',{data:{sessions:[saved('old')]}})).ok);await env.request('SETTINGS',{autoOn:true});for(let index=0;index<5;index++){env.tabs[0].url='https://example.com/'+index;assert((await env.request('SAVE_WINDOW',{auto:true,windowId:1})).ok)}assert.equal(env.data.tv_sessions.filter(session=>session.auto).length,3);assert(env.data.tv_sessions.some(session=>session.id==='old'));assert.equal((await env.request('PROJECT_ADD',{name:'Free project'})).code,'pro');
+ await test('Free backups and rolling snapshots retain existing records',async()=>{
+  const env=await boot();assert((await env.request('IMPORT',{data:{sessions:[saved('old')]}})).ok);await env.request('SETTINGS',{autoOn:true});for(let index=0;index<5;index++){env.tabs[0].url='https://example.com/'+index;assert((await env.request('SAVE_WINDOW',{auto:true,windowId:1})).ok)}assert.equal(env.data.tv_sessions.filter(session=>session.auto).length,5);assert(env.data.tv_sessions.some(session=>session.id==='old'));assert((await env.request('PROJECT_ADD',{name:'Free project'})).ok);
  });
  await test('Project edits, notes and batch moves are atomic and survive JSON normalization',async()=>{
   const env=await boot();await env.activate();const project=(await env.request('PROJECT_ADD',{name:'Research',color:'#11836e'})).project;const saved=(await env.request('SAVE_WINDOW',{projectId:project.id})).session;
@@ -49,7 +49,7 @@ if(app==='tabtasks'){
   const old=Date.now()-31*864e5,env=await boot({tv_sessions:[saved('manual',{createdAt:old}),saved('auto',{createdAt:old,auto:true})]});await env.activate();await env.request('SETTINGS',{autoOn:true});await env.request('SAVE_WINDOW',{auto:true,windowId:1});assert(env.data.tv_sessions.some(session=>session.id==='manual'));assert(!env.data.tv_sessions.some(session=>session.id==='auto'));
  });
  await test('Downgraded users can restore complete backups and continue reading over-quota records',async()=>{
-  const env=await boot(),projects=[{id:'research',name:'Research',color:'#11836e'}];const result=await env.request('IMPORT',{data:{projects,sessions:Array.from({length:12},(_,index)=>saved('old'+index,{projectId:'research'}))}});assert(result.ok);assert.equal(result.state.sessions.length,12);assert.equal((await env.request('SAVE_WINDOW')).code,'limit');assert.equal((await env.request('RESTORE',{id:'old0',here:true,windowId:1})).ok,true);
+  const env=await boot(),projects=[{id:'research',name:'Research',color:'#11836e'}];const result=await env.request('IMPORT',{data:{projects,sessions:Array.from({length:35},(_,index)=>saved('old'+index,{projectId:'research'}))}});assert(result.ok);assert.equal(result.state.sessions.length,35);assert.equal((await env.request('SAVE_WINDOW')).code,'limit');assert.equal((await env.request('RESTORE',{id:'old0',here:true,windowId:1})).ok,true);
  });
 }
 

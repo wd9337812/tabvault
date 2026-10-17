@@ -1,25 +1,29 @@
-importScripts('config.js', 'license.js', 'data.js', 'i18n.js', 'billing-client.js');
+importScripts('config.js', 'license.js', 'data.js', 'i18n.js', 'billing-client.js', 'workflows.js');
 const STORE_SESSIONS = 'tv_sessions', STORE_SETTINGS = 'tv_settings', ALARM_AUTOSAVE = 'tv-autosave';
 const serialize = Data.queue();
-const defaultSettings = { autoOn: false, intervalMin: CONFIG.AUTO_INTERVAL_MIN, delAfterRestore: false, langPref: 'en', themePref: 'light' };
+const defaultSettings = { autoOn: false, intervalMin: CONFIG.AUTO_INTERVAL_MIN, delAfterRestore: false, langPref: 'auto', themePref: 'light', fontSize: 'standard' };
 async function readState() {
-  const raw = await chrome.storage.local.get([STORE_SESSIONS, STORE_SETTINGS, 'tv_license', 'tv_projects']);
+  const raw = await chrome.storage.local.get([STORE_SESSIONS, STORE_SETTINGS, 'tv_license', 'tv_projects', 'tv_launches', 'tv_undo']);
   const projects = Data.records(raw.tv_projects, Data.project),records = Data.records(raw[STORE_SESSIONS], Data.session), stored = Data.object(raw[STORE_SETTINGS]) ? raw[STORE_SETTINGS] : {};
   const settings = { ...defaultSettings, ...Object.fromEntries(Object.keys(defaultSettings).filter(k => k in stored).map(k => [k, stored[k]])) };
   settings.autoOn = !!settings.autoOn; settings.delAfterRestore = !!settings.delAfterRestore;
   settings.intervalMin = Number.isFinite(settings.intervalMin) && settings.intervalMin >= 1 ? settings.intervalMin : CONFIG.AUTO_INTERVAL_MIN;
-  if (!['en', 'zh'].includes(settings.langPref)) settings.langPref = 'en';
+  if (!['auto','en','zh'].includes(settings.langPref)) settings.langPref = 'auto';
+  if (!['compact','standard','large'].includes(settings.fontSize)) settings.fontSize='standard';
   if (!['light', 'dark', 'auto'].includes(settings.themePref)) settings.themePref = 'auto';
   const key = raw.tv_license?.key, v = key ? await Lic.verify(key, CONFIG.SECRET) : { ok: false };
   const plan = v.ok && v.plan === 'pro' ? 'pro' : 'free'; settings.plan = plan;
-  I18N.setPref(settings.langPref);
-  return { projects:projects.values,sessions: records.values.sort((a, b) => b.createdAt - a.createdAt), settings, plan, raw, invalid: records.invalid||projects.invalid, license: v.ok ? v : null };
+  I18N.setPref(settings.langPref); settings.langResolved=I18N.lang();
+  const launches=VaultFlows.load(raw.tv_launches);
+  return { launches:launches.values, launchInvalid:launches.invalid, undo:raw.tv_undo, projects:projects.values,sessions: records.values.sort((a, b) => b.createdAt - a.createdAt), settings, plan, raw, invalid: records.invalid||projects.invalid, license: v.ok ? v : null };
 }
 const capsFor = s => s.plan === 'pro' ? CONFIG.PRO : CONFIG.FREE;
-const snapshot = s => ({ projects:s.projects,sessions: s.sessions, settings: s.settings, plan: s.plan, license: s.license, recoveryAvailable: s.invalid });
+const snapshot = s => ({ launches:s.launches, undoAvailable:!!s.undo&&s.undo.after===VaultFlows.signature(s)&&Date.now()-s.undo.at<864e5, projects:s.projects,sessions: s.sessions, settings: s.settings, plan: s.plan, license: s.license, recoveryAvailable: s.invalid });
 async function writeSessions(s) {
   await Data.protect(s.raw, [STORE_SESSIONS,'tv_projects'], 'tv_recovery_backup_v1', s.invalid);
-  await chrome.storage.local.set({ [STORE_SESSIONS]: s.sessions, tv_projects:s.projects });
+  await Data.protect(s.raw,['tv_launches'],'tv_launches_recovery_v1',s.launchInvalid);
+  if(s.undoBefore){const after=VaultFlows.signature(s);if(after!==Data.fingerprint(s.undoBefore))s.undo={at:Date.now(),before:Data.makeUndo(s.undoBefore,VaultFlows.content(s)),after};delete s.undoBefore;}
+  await chrome.storage.local.set({ [STORE_SESSIONS]: s.sessions, tv_projects:s.projects, tv_launches:s.launches, tv_undo:s.undo||null });
   updateTitle(s).catch(console.warn);
 }
 async function updateTitle(s) {
@@ -108,9 +112,14 @@ async function restoreSession(s, {id,here=false,windowId,indices,preserveGroups=
 }
 
 async function dispatch(op, p = {}) {
-  const s = await readState(); let extra = {};
+  const s = await readState(); if(!['READ','SETTINGS','LICENSE_SET','LICENSE_RELEASE','UNDO'].includes(op)&&!op.startsWith('BILLING_')&&!(op==='SAVE_WINDOW'&&p.auto))s.undoBefore=structuredClone(VaultFlows.content(s)); let extra = {};
   if (op.startsWith('BILLING_')) { const billing=await BillingClient.dispatch(op,p); return {ok:true,state:snapshot(await readState()),...billing}; }
-  else if (op === 'READ') { /* Reading never writes stale page state. */ }
+  else if (/^(DIFF_(PREVIEW|RESTORE)|CLEANUP_(PREVIEW|APPLY)|LAUNCH_(SAVE|DELETE|OPEN))$/.test(op)) { extra=await VaultFlows.handle(s,op,p); if(extra.changedData)await writeSessions(s); }
+  else if (op==='UNDO') {
+    if(!snapshot(s).undoAvailable)Data.fail('stale','undoExpired');
+    const saved=Data.applyUndo(VaultFlows.content(s),s.undo.before);s.sessions=[...s.sessions.filter(x=>x.auto),...Data.records(saved.sessions,Data.session,true).values].sort((a,b)=>b.createdAt-a.createdAt);s.projects=Data.records(saved.projects,Data.project,true).values;s.launches=VaultFlows.load(saved.launches,true).values;s.undo=null;await writeSessions(s);
+  }
+  else if (op === 'READ') { if(s.undo&&Date.now()-s.undo.at>=864e5){s.undo=null;await chrome.storage.local.remove('tv_undo');} }
   else if (op === 'SAVE_WINDOW') extra = await saveWindow(s, p);
   else if (op === 'PASTE') { extra = insertSession(s, p.tabs || [],{projectId:p.projectId||'',name:p.name}); await writeSessions(s); }
   else if (op === 'DELETE') { s.sessions = s.sessions.filter(x => x.id !== p.id); await writeSessions(s); }
@@ -124,6 +133,7 @@ async function dispatch(op, p = {}) {
     if (!Data.object(p.data) || (p.data.app && p.data.app !== 'tabvault')) Data.fail('invalid', I18N.t('tBadFile'));
     const sessions = Data.records(p.data.sessions, Data.session, true).values, ids = new Set(s.sessions.map(x => x.id));
     const incoming = sessions.filter(x => !ids.has(x.id));
+    const launches=VaultFlows.load(p.data.launches,true).values;const haveLaunches=new Set(s.launches.map(x=>x.id));s.launches.push(...launches.filter(x=>!haveLaunches.has(x.id)));
     const projects=Data.records(p.data.projects||[],Data.project,true).values,known=new Set(s.projects.map(x=>x.id));
     const available=new Set([...known,...projects.map(project=>project.id)]);
     if(incoming.some(session=>session.projectId&&!available.has(session.projectId)))Data.fail('invalid','missingProject');
@@ -132,7 +142,7 @@ async function dispatch(op, p = {}) {
     s.sessions = [...incoming, ...s.sessions].sort((a, b) => b.createdAt - a.createdAt); await writeSessions(s); extra.imported = incoming.length;
   }
   else if(op==='PROJECT_ADD'){
-    requireFeature(s,'projects');const project=Data.project({id:Data.id(),name:p.name,color:p.color,note:p.note});s.projects.push(project);await writeSessions(s);extra.project=project;
+    requireFeature(s,'projects');if(s.projects.length >= (capsFor(s).maxProjects??Infinity))Data.fail('limit','projectLimit');const project=Data.project({id:Data.id(),name:p.name,color:p.color,note:p.note});s.projects.push(project);await writeSessions(s);extra.project=project;
   }
   else if(op==='PROJECT_PATCH'){
     requireFeature(s,'projects');const project=s.projects.find(x=>x.id===p.id);if(!project)Data.fail('missing','missingProject');Object.assign(project,Data.project({...project,...Object.fromEntries(['name','note','color'].filter(key=>Object.hasOwn(p,key)).map(key=>[key,p[key]]))}));await writeSessions(s);
@@ -146,7 +156,7 @@ async function dispatch(op, p = {}) {
     if(fields.projectId&&!s.projects.some(x=>x.id===fields.projectId))Data.fail('missing','missingProject');Object.assign(session,Data.session({...session,...fields}));await writeSessions(s);
   }
   else if(op==='BULK_MOVE'||op==='MERGE'){
-    requireFeature(s,'organize');if(!Array.isArray(p.ids)||!p.ids.length||new Set(p.ids).size!==p.ids.length)Data.fail('invalid','invalidSelection');
+    if(s.plan!=='pro')Data.fail('pro','organizePro');requireFeature(s,'organize');if(!Array.isArray(p.ids)||!p.ids.length||new Set(p.ids).size!==p.ids.length)Data.fail('invalid','invalidSelection');
     const selected=p.ids.map(id=>s.sessions.find(session=>session.id===id&&!session.auto));if(selected.some(x=>!x))Data.fail('missing','missingSession');
     if(p.projectId&&!s.projects.some(x=>x.id===p.projectId))Data.fail('missing','missingProject');
     if(op==='BULK_MOVE')selected.forEach(session=>{session.projectId=p.projectId||''});
@@ -154,11 +164,11 @@ async function dispatch(op, p = {}) {
     await writeSessions(s);
   }
   else if(op==='DEDUP'){
-    requireFeature(s,'organize');const session=s.sessions.find(x=>x.id===p.id&&!x.auto);if(!session)Data.fail('missing','missingSession');const seen=new Set(),before=session.tabs.length;
+    if(s.plan!=='pro')Data.fail('pro','organizePro');requireFeature(s,'organize');const session=s.sessions.find(x=>x.id===p.id&&!x.auto);if(!session)Data.fail('missing','missingSession');const seen=new Set(),before=session.tabs.length;
     session.tabs=session.tabs.filter(tab=>{const key=new URL(tab.url).href;if(seen.has(key))return false;seen.add(key);return true});extra.removed=before-session.tabs.length;if(extra.removed)await writeSessions(s);
   }
   else if(op==='RESTORE_PROJECT'){
-    requireFeature(s,'projects');if(!s.projects.some(x=>x.id===p.id))Data.fail('missing','missingProject');const sessions=s.sessions.filter(x=>!x.auto&&x.projectId===p.id);if(!sessions.length)Data.fail('empty','projectEmpty');
+    if(s.plan!=='pro')Data.fail('pro','launchPro');requireFeature(s,'projects');if(!s.projects.some(x=>x.id===p.id))Data.fail('missing','missingProject');const sessions=s.sessions.filter(x=>!x.auto&&x.projectId===p.id);if(!sessions.length)Data.fail('empty','projectEmpty');
     let restored=0,skipped=0;for(const session of sessions){const result=await restoreSession(s,{id:session.id,skipDuplicates:!!p.skipDuplicates,preserveGroups:true,keepSession:true});restored+=result.restored;skipped+=result.skipped;}extra={restored,skipped,windows:sessions.length};
   }
 
@@ -167,7 +177,7 @@ async function dispatch(op, p = {}) {
     if (p.autoOn === true && !capsFor(s).auto) Data.fail('pro', I18N.t('tAutoPro'));
     if (!capsFor(s).auto) s.settings.autoOn = false;
     if (!Number.isFinite(s.settings.intervalMin) || s.settings.intervalMin < 1) Data.fail('invalid', 'Invalid interval');
-    if (!['en','zh','auto'].includes(s.settings.langPref) || !['light','dark','auto'].includes(s.settings.themePref)) Data.fail('invalid', 'Invalid preference');
+    if (!['compact','standard','large'].includes(s.settings.fontSize) || !['en','zh','auto'].includes(s.settings.langPref) || !['light','dark','auto'].includes(s.settings.themePref)) Data.fail('invalid', 'Invalid preference');
     I18N.setPref(s.settings.langPref); s.settings.langResolved = I18N.lang();
     await chrome.storage.local.set({ [STORE_SETTINGS]: s.settings }); await syncAlarm(s);
     if (s.settings.autoOn && capsFor(s).auto) await refreshWindowCaches();

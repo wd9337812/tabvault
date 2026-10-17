@@ -17,12 +17,12 @@ const CONFIG = {
   STRIPE_PAYMENT_LINK: "https://pay-tabvault.tabplugins.top/buy",
 
   FREE: {
-    maxManualSessions: 10,   // 免费可保存的手动会话数
-    auto: true,            // 可选自动备份，免费保留最近 3 份
+    maxManualSessions: 30,   // 免费可保存的手动会话数
+    auto: true,            // 可选自动备份，24 小时内最多 50 份，受总容量约束
     search: true,          // 免费标题 / 网址搜索
     export: true,          // 免费导出 / 导入 JSON
-    projects: false, organize: false, advancedRestore: false,
-    keepAutoBackups: 3      // 开启后滚动保留；解除授权不会立即删除旧数据
+    projects: true, organize: true, advancedRestore: true, maxProjects: 3,
+    keepAutoBackups: 50, historyDays: 1      // 开启后滚动保留；解除授权不会立即删除旧数据
   },
 
   PRO: {
@@ -30,7 +30,7 @@ const CONFIG = {
     auto: true,
     search: true,
     export: true,
-    projects: true, organize: true, advancedRestore: true,
+    projects: true, organize: true, advancedRestore: true, maxProjects: Infinity,
     keepAutoBackups: 500, historyDays: 30
   },
 
